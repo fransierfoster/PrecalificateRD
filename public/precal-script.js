@@ -1236,14 +1236,11 @@ function mostrarContador(n) {
 function fetchContadorReal() {
   if (!SUPA_URL || !SUPA_KEY) return;
 
-  fetch(SUPA_URL + '/rest/v1/precalifica_calculos?select=id', {
-    headers: supaHeaders({ 'Prefer': 'count=exact', 'Range': '0-0' })
-  }).then(function (r) {
-    var cr = r.headers.get('content-range');
-    if (cr) {
-      var total = parseInt(cr.split('/')[1], 10);
-      if (!isNaN(total) && total > 0) mostrarContador(total);
-    }
+  fetch(SUPA_URL + '/rest/v1/rpc/contar_precalificaciones', {
+    method: 'POST',
+    headers: supaHeaders({})
+  }).then(function (r) { return r.json(); }).then(function (total) {
+    if (!isNaN(total) && total > 0) mostrarContador(total);
   }).catch(function (err) {
     console.log('Contador fetch error:', err);
   });
