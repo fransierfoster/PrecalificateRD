@@ -1043,12 +1043,12 @@ function compartir() {
   var e1 = SD.e1;
   var nivel = e1.sc >= 90 ? 'Muy alta ✅' : e1.sc >= 80 ? 'Alta ✅' : e1.sc >= 70 ? 'Moderada 🟡' : e1.sc >= 60 ? 'Baja 🟠' : 'Muy baja 🔴';
 
-  var txt = '🏠 *Mi precalificación en PrecalificateRD*\n\n';
+  var txt = '🏠 Mi precalificación en PrecalificateRD\n\n';
   txt += '💰 Propiedad evaluada: ' + fmt(SD.vinmDOP) + '\n';
   txt += '🏦 Monto a financiar: ' + fmt(SD.prDOP) + '\n';
   txt += '📅 Cuota mensual estimada: ' + fmt(e1.cDOP) + '\n';
-  txt += '📊 Probabilidad de aprobación: *' + e1.sc + '%* (' + nivel + ')\n\n';
-  txt += 'Me he evaluado en Precalificaterd.com, accede y has tu precalificación *¡totalmente gratis y sin acceder a tu score!*\n';
+  txt += '📊 Probabilidad de aprobación: ' + e1.sc + '% (' + nivel + ')\n\n';
+  txt += 'Me he evaluado en *PrecalificateRD*, accede y has tu precalificación ¡totalmente gratis y sin acceder a tu score!\n';
   txt += 'https://precalificaterd.com';
 
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
