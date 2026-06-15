@@ -1062,20 +1062,15 @@ function compartir() {
     html2canvas(el, { backgroundColor: getComputedStyle(document.body).backgroundColor, scale: 2 }).then(function (canvas) {
       canvas.toBlob(function (blob) {
         if (!blob) { waFallback(); return; }
-        var file = new File([blob], 'precalificaterd-resultado.png', { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], text: msg }).catch(function () {});
-        } else {
-          var url = URL.createObjectURL(blob);
-          var a = document.createElement('a');
-          a.href = url;
-          a.download = 'precalificaterd-resultado.png';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-          waFallback();
-        }
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'precalificaterd-resultado.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        waFallback();
       }, 'image/png');
     }).catch(waFallback);
   };
