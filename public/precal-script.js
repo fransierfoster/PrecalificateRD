@@ -5,7 +5,7 @@ const DC = ['US','PR','CA','PA','EC','SV','BS','BB','AG','GD','KN','LC','VC','TT
 var SNMS = ['', 'Perfil Personal', 'Situación Financiera', 'Inmueble y Capital'];
 
 let SD = {};
-var MR = 'DOP', TOK = false, COK = false, PRESVAL = null, ATVAL = null, CDATVAL = null, LANG = 'es';
+var MR = 'DOP', TOK = false, COK = false, PRESVAL = null, ATVAL = null, CDATVAL = null;
 
 // ── SUPABASE ──
 var SUPA_URL = (typeof window !== 'undefined' && window.__SUPA_URL__) || '';
@@ -88,30 +88,6 @@ function en(e, nid) {
     var el = document.getElementById(nid);
     if (el) el.focus();
   }
-}
-
-// ── IDIOMA ──
-function toggleLang() {
-  LANG = LANG === 'es' ? 'en' : 'es';
-  document.getElementById('lnglbl').textContent = LANG === 'es' ? 'EN' : 'ES';
-  applyLang();
-}
-
-function applyLang() {
-  var L = LANG;
-  document.querySelectorAll('[data-es]').forEach(function (el) {
-    var val = el.getAttribute('data-' + L);
-    if (val === null) return;
-    if (el.tagName === 'INPUT') el.placeholder = val;
-    else el.innerHTML = val;
-  });
-
-  SNMS = L === 'es'
-    ? ['', 'Perfil Personal', 'Situación Financiera', 'Inmueble y Capital']
-    : ['', 'Personal Profile', 'Financial Situation', 'Property & Capital'];
-
-  var pn2 = document.getElementById('pnam');
-  if (pn2 && pn2.textContent) {}
 }
 
 // ── PRODUCTOS MULTI-SELECT ──

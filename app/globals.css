@@ -6,9 +6,6 @@ html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;transition:background .3s,color .3s;}
 .thbar{background:var(--blk);padding:7px 20px;display:flex;align-items:center;justify-content:flex-end;gap:10px;}
 .thlbl{font-size:11px;font-weight:600;color:rgba(255,255,255,.5);}
-.lang-btn{font-size:11px;font-weight:700;color:rgba(255,255,255,.7);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:2px 8px;cursor:pointer;transition:background .2s;}
-.lang-btn:hover{background:rgba(255,255,255,.2);}
-.thsep{width:1px;height:16px;background:rgba(255,255,255,.15);}
 .tswitch{position:relative;width:48px;height:24px;}
 .tswitch input{opacity:0;width:0;height:0;}
 .ttrack{position:absolute;inset:0;border-radius:24px;cursor:pointer;background:#333;transition:background .25s;display:flex;align-items:center;padding:0 3px;}
