@@ -817,6 +817,7 @@ function render() {
 
   var fabShare = document.getElementById('fab-share');
   if (fabShare) fabShare.style.display = 'block';
+  loadHtml2Canvas(function () {}, function () {});
 
   document.getElementById('pw').style.display = 'none';
 
@@ -1037,31 +1038,49 @@ function reinit() {
   if (fabShare) fabShare.style.display = 'none';
 }
 
+function loadHtml2Canvas(cb, onerror) {
+  if (window.html2canvas) { cb(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload = cb;
+  s.onerror = onerror;
+  document.head.appendChild(s);
+}
+
 function compartir() {
   if (!SD || !SD.e1) return;
 
-  var e1 = SD.e1;
+  var el = document.querySelector('#sr .e1box');
+  if (!el) return;
 
-  var txt = 'Mi resultado en PrecalificateRD\n\n';
-  txt += 'Propiedad evaluada: ' + fmt(SD.vinmDOP) + '\n';
-  txt += 'Financiamiento: ' + fmt(SD.prDOP) + '\n';
-  txt += 'Cuota estimada: ' + fmt(e1.cDOP) + '/mes\n';
-  txt += 'Probabilidad de aprobacion: ' + e1.sc + '%\n';
+  var msg = 'Me he evaluado en Precalificaterd.com, accede y has tu precalificación *¡totalmente gratis y sin acceder a tu score!*';
+  var waFallback = function () {
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  };
 
-  var b = e1.sc >= 90 ? 'Muy Alta' : e1.sc >= 80 ? 'Alta' : e1.sc >= 70 ? 'Moderada' : e1.sc >= 60 ? 'Baja' : 'Muy Baja';
-  txt += 'Nivel: ' + b + '\n\n';
+  var capture = function () {
+    html2canvas(el, { backgroundColor: getComputedStyle(document.body).backgroundColor, scale: 2 }).then(function (canvas) {
+      canvas.toBlob(function (blob) {
+        if (!blob) { waFallback(); return; }
+        var file = new File([blob], 'precalificaterd-resultado.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], text: msg }).catch(function () {});
+        } else {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'precalificaterd-resultado.png';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          waFallback();
+        }
+      }, 'image/png');
+    }).catch(waFallback);
+  };
 
-  if (SD.e2 && SD.e2.sc > 0 && SD.virDOP > 0 && e1.sc < 80) {
-    txt += 'Mejor opcion segun mi perfil: ' + fmt(SD.virDOP) + '\n';
-    txt += 'Probabilidad opcion ideal: ' + SD.e2.sc + '%\n\n';
-  }
-
-  txt += 'Calcula tu probabilidad gratis en:\n';
-  txt += 'precalificaterd.com\n\n';
-  txt += 'PrecalificateRD - Perfect House SRL';
-
-  var url = 'https://wa.me/?text=' + encodeURIComponent(txt);
-  window.open(url, '_blank');
+  loadHtml2Canvas(capture, waFallback);
 }
 
 // -- LOCALSTORAGE -- guardar datos del formulario
