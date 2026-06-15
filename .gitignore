@@ -4,3 +4,5 @@
 node_modules
 .next
 _extract
+
+.vercel
