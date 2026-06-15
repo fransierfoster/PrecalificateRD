@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { updateParametro, updateLead, signOut } from './actions';
+import { updateParametro, signOut } from './actions';
+import LeadsTable, { type Lead } from './LeadsTable';
 import './admin.css';
 
 type Parametro = {
@@ -8,31 +9,6 @@ type Parametro = {
   valor: number;
   categoria: string | null;
   descripcion: string | null;
-};
-
-type Calculo = {
-  score_e1: number | null;
-  score_e2: number | null;
-  moneda_resultado: string | null;
-  vinm_dop: number | null;
-  dti: number | null;
-};
-
-type Lead = {
-  id: string;
-  created_at: string;
-  nombre: string | null;
-  apellido: string | null;
-  telefono: string | null;
-  email: string | null;
-  doc_tipo: string | null;
-  doc_numero: string | null;
-  quiere_ofertas: boolean | null;
-  contactado: boolean | null;
-  asesor_asignado: string | null;
-  resultado_banco: string | null;
-  notas: string | null;
-  precalifica_calculos: Calculo | null;
 };
 
 const CATEGORIA_LABELS: Record<string, string> = {
@@ -45,10 +21,45 @@ const CATEGORIA_LABELS: Record<string, string> = {
 
 const CATEGORIA_ORDER = ['pesos', 'dti', 'ltv', 'mora', 'fin'];
 
-function fmtMoney(n: number | null, currency: string | null) {
-  if (n == null) return '-';
-  const symbol = currency === 'USD' ? 'US$' : 'RD$';
-  return symbol + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+const BUCKETS = [
+  { label: '0–20%', min: 0, max: 20 },
+  { label: '20–40%', min: 20, max: 40 },
+  { label: '40–60%', min: 40, max: 60 },
+  { label: '60–80%', min: 60, max: 80 },
+  { label: '80–100%', min: 80, max: 101 },
+];
+
+function bucketize(scores: (number | null | undefined)[]) {
+  const counts = BUCKETS.map(() => 0);
+  scores.forEach((s) => {
+    if (s == null) return;
+    for (let i = 0; i < BUCKETS.length; i++) {
+      if (s >= BUCKETS[i].min && s < BUCKETS[i].max) {
+        counts[i]++;
+        break;
+      }
+    }
+  });
+  return counts;
+}
+
+function Histogram({ title, counts }: { title: string; counts: number[] }) {
+  const max = Math.max(1, ...counts);
+  const total = counts.reduce((a, b) => a + b, 0);
+  return (
+    <div className="adm-hist">
+      <h3>{title} ({total})</h3>
+      {BUCKETS.map((b, i) => (
+        <div className="adm-hist-row" key={b.label}>
+          <div className="adm-hist-label">{b.label}</div>
+          <div className="adm-hist-bar-wrap">
+            <div className="adm-hist-bar" style={{ width: `${(counts[i] / max) * 100}%` }} />
+          </div>
+          <div className="adm-hist-count">{counts[i]}</div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default async function AdminPage() {
@@ -78,6 +89,14 @@ export default async function AdminPage() {
     .order('created_at', { ascending: false })
     .returns<Lead[]>();
 
+  const { data: calculos } = await supabase
+    .from('precalifica_calculos')
+    .select('score_e1')
+    .returns<{ score_e1: number | null }[]>();
+
+  const calculosCounts = bucketize((calculos || []).map((c) => c.score_e1));
+  const leadsCounts = bucketize((leads || []).map((l) => l.precalifica_calculos?.score_e1));
+
   const groups: Record<string, Parametro[]> = {};
   (parametros || []).forEach((p) => {
     const cat = p.categoria || 'otros';
@@ -97,6 +116,14 @@ export default async function AdminPage() {
         <form action={signOut}>
           <button type="submit" className="adm-logout">Cerrar sesión</button>
         </form>
+      </div>
+
+      <div className="adm-card">
+        <h2>Resumen</h2>
+        <div className="adm-hist-grid">
+          <Histogram title="Cálculos por probabilidad" counts={calculosCounts} />
+          <Histogram title="Leads por probabilidad" counts={leadsCounts} />
+        </div>
       </div>
 
       <div className="adm-card">
@@ -129,67 +156,7 @@ export default async function AdminPage() {
 
       <div className="adm-card">
         <h2>Leads ({leads?.length || 0})</h2>
-        {leads && leads.length > 0 ? (
-          <div className="adm-table-wrap">
-            <table className="adm-table">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Contacto</th>
-                  <th>Documento</th>
-                  <th>Resultado</th>
-                  <th>Ofertas</th>
-                  <th>Seguimiento</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {leads.map((lead) => {
-                  const c = lead.precalifica_calculos;
-                  return (
-                    <tr key={lead.id}>
-                      <td>{new Date(lead.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                      <td>
-                        <strong>{lead.nombre} {lead.apellido}</strong><br />
-                        {lead.telefono}<br />
-                        {lead.email}
-                      </td>
-                      <td>{lead.doc_tipo} {lead.doc_numero}</td>
-                      <td>
-                        {c ? (
-                          <>
-                            {fmtMoney(c.vinm_dop, c.moneda_resultado)}<br />
-                            E1: {c.score_e1}% {c.score_e2 != null ? `/ E2: ${c.score_e2}%` : ''}<br />
-                            DTI: {c.dti != null ? (c.dti * 100).toFixed(0) + '%' : '-'}
-                          </>
-                        ) : <span className="adm-empty">sin datos</span>}
-                      </td>
-                      <td>
-                        <span className={`adm-pill ${lead.quiere_ofertas ? 'adm-pill-green' : 'adm-pill-gray'}`}>
-                          {lead.quiere_ofertas ? 'Sí' : 'No'}
-                        </span>
-                      </td>
-                      <td>
-                        <form action={updateLead} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
-                          <input type="hidden" name="id" value={lead.id} />
-                          <label style={{ fontSize: 12 }}>
-                            <input type="checkbox" name="contactado" defaultChecked={!!lead.contactado} /> Contactado
-                          </label>
-                          <input type="text" name="asesor_asignado" placeholder="Asesor asignado" defaultValue={lead.asesor_asignado || ''} />
-                          <input type="text" name="resultado_banco" placeholder="Resultado banco" defaultValue={lead.resultado_banco || ''} />
-                          <textarea name="notas" placeholder="Notas" defaultValue={lead.notas || ''} />
-                          <button type="submit" className="adm-btn adm-btn-primary">Guardar</button>
-                        </form>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="adm-empty">Aún no hay leads.</p>
-        )}
+        <LeadsTable leads={leads || []} />
       </div>
     </div>
   );
