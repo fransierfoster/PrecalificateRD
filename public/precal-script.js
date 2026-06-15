@@ -817,7 +817,6 @@ function render() {
 
   var fabShare = document.getElementById('fab-share');
   if (fabShare) fabShare.style.display = 'block';
-  loadHtml2Canvas(function () {}, function () {});
 
   document.getElementById('pw').style.display = 'none';
 
@@ -1038,44 +1037,21 @@ function reinit() {
   if (fabShare) fabShare.style.display = 'none';
 }
 
-function loadHtml2Canvas(cb, onerror) {
-  if (window.html2canvas) { cb(); return; }
-  var s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-  s.onload = cb;
-  s.onerror = onerror;
-  document.head.appendChild(s);
-}
-
 function compartir() {
   if (!SD || !SD.e1) return;
 
-  var el = document.querySelector('#sr .e1box');
-  if (!el) return;
+  var e1 = SD.e1;
+  var nivel = e1.sc >= 90 ? 'Muy alta ✅' : e1.sc >= 80 ? 'Alta ✅' : e1.sc >= 70 ? 'Moderada 🟡' : e1.sc >= 60 ? 'Baja 🟠' : 'Muy baja 🔴';
 
-  var msg = 'Me he evaluado en Precalificaterd.com, accede y has tu precalificación *¡totalmente gratis y sin acceder a tu score!*';
-  var waFallback = function () {
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-  };
+  var txt = '🏠 *Mi precalificación en PrecalificateRD*\n\n';
+  txt += '💰 Propiedad evaluada: ' + fmt(SD.vinmDOP) + '\n';
+  txt += '🏦 Monto a financiar: ' + fmt(SD.prDOP) + '\n';
+  txt += '📅 Cuota mensual estimada: ' + fmt(e1.cDOP) + '\n';
+  txt += '📊 Probabilidad de aprobación: *' + e1.sc + '%* (' + nivel + ')\n\n';
+  txt += 'Me he evaluado en Precalificaterd.com, accede y has tu precalificación *¡totalmente gratis y sin acceder a tu score!*\n';
+  txt += 'https://precalificaterd.com';
 
-  var capture = function () {
-    html2canvas(el, { backgroundColor: getComputedStyle(document.body).backgroundColor, scale: 2 }).then(function (canvas) {
-      canvas.toBlob(function (blob) {
-        if (!blob) { waFallback(); return; }
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'precalificaterd-resultado.png';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-        waFallback();
-      }, 'image/png');
-    }).catch(waFallback);
-  };
-
-  loadHtml2Canvas(capture, waFallback);
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
 }
 
 // -- LOCALSTORAGE -- guardar datos del formulario
