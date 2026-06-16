@@ -1,0 +1,20 @@
+name: Keepalive Supabase
+
+on:
+  schedule:
+    - cron: '0 10 */3 * *'  # cada 3 días a las 10am UTC
+  workflow_dispatch:         # también se puede lanzar manualmente
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping keepalive endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://precalificaterd.com/api/keepalive)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "ERROR: keepalive devolvió $STATUS"
+            exit 1
+          fi
+          echo "Supabase activo — ping OK"
