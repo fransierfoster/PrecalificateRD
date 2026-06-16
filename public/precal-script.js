@@ -789,6 +789,7 @@ function render() {
   renderResumen();
 
   actualizarContador();
+  actualizarContadorSolicitudes();
 
   var lt = document.getElementById('lead-title');
   var lm = document.getElementById('lead-msg');
@@ -968,6 +969,7 @@ function enviar() {
   document.getElementById('sr').classList.remove('act');
   document.getElementById('success').classList.add('act');
   ssc();
+  actualizarContadorSolicitudes();
 }
 
 function reinit() {
@@ -1246,6 +1248,29 @@ function fetchContadorReal() {
   });
 }
 
+// -- CONTADOR DE SOLICITUDES --
+function actualizarContadorSolicitudes() {
+  fetchSolicitudesReal();
+}
+
+function mostrarContadorSolicitudes(n) {
+  var el = document.getElementById('contador-solicitudes');
+  if (el && n > 0) el.textContent = Number(n).toLocaleString('en-US');
+}
+
+function fetchSolicitudesReal() {
+  if (!SUPA_URL || !SUPA_KEY) return;
+
+  fetch(SUPA_URL + '/rest/v1/rpc/contar_solicitudes', {
+    method: 'POST',
+    headers: supaHeaders({})
+  }).then(function (r) { return r.json(); }).then(function (total) {
+    if (!isNaN(total) && total > 0) mostrarContadorSolicitudes(total);
+  }).catch(function (err) {
+    console.log('Solicitudes fetch error:', err);
+  });
+}
+
 // -- BOTON OFERTAS --
 var QUIERE_OFERTAS = false;
 
@@ -1390,6 +1415,7 @@ function initPrecal() {
 
   setTimeout(loadForm, 300);
   fetchContadorReal();
+  fetchSolicitudesReal();
   loadRemoteParams();
 }
 
