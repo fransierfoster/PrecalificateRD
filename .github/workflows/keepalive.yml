@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Ping keepalive endpoint
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://precalificaterd.com/api/keepalive)
+          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" https://precalificaterd.com/api/keepalive)
           echo "HTTP status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "ERROR: keepalive devolvió $STATUS"
