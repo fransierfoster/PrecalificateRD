@@ -155,7 +155,7 @@ function TM() {
 function TH() {
   var pctDOP = (TDOP * 12 * 100).toFixed(2);
   var pctUSD = (TUSD * 12 * 100).toFixed(2);
-  return MR === 'USD' ? 'Tasa ref. ' + pctUSD + '% anual (préstamos USD en RD)' : 'Tasa ref. ' + pctDOP + '% anual (BCRD)';
+  return MR === 'USD' ? 'Tasa ref. ' + pctUSD + '% anual (préstamos USD en RD)' : 'Tasa ref. ' + pctDOP + '% anual';
 }
 
 function fmt(d) {
