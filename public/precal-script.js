@@ -631,8 +631,8 @@ function buildWhy(e, antCred, tuvoPres) {
 
   if (e.pL >= 88) w.push({ t: 'ok', x: 'Inicial muy favorable', s: 'Tu inicial representa el ' + Math.round(100 - e.ltv * 100) + '% del valor. Reduce el riesgo del banco.' });
   else if (e.pL >= 70) w.push({ t: 'ok', x: 'Inicial adecuada', s: 'Tu inicial cubre el ' + Math.round(100 - e.ltv * 100) + '% del valor. Dentro del rango preferido.' });
-  else if (e.pL >= 42) w.push({ t: 'w', x: 'Inicial en el limite minimo', s: 'Aumentar la inicial mejoraria directamente tu probabilidad y reduciria la cuota mensual.' });
-  else w.push({ t: 'b', x: 'Inicial insuficiente', s: 'La mayoria de entidades requieren al menos el 20% de inicial.' });
+  else if (e.pL >= 42) w.push({ t: 'w', x: 'Inicial en el limite minimo', s: 'Tu inicial cubre el ' + Math.round(100 - e.ltv * 100) + '% del valor. Aumentarla mejoraria directamente tu probabilidad y reduciria la cuota mensual.' });
+  else w.push({ t: 'b', x: 'Inicial insuficiente', s: 'Tu inicial cubre solo el ' + Math.round(100 - e.ltv * 100) + '% del valor. La mayoria de entidades requieren al menos el 20%.' });
 
   if (e.pEs >= 80) w.push({ t: 'ok', x: 'Estabilidad laboral comprobable', s: 'Tu tipo de empleo y antiguedad generan confianza en los evaluadores.' });
   else if (e.pEs >= 55) w.push({ t: 'w', x: 'Estabilidad laboral aceptable', s: 'Mas de 2 anos en el mismo empleo mejoraria tu evaluacion.' });
@@ -735,61 +735,93 @@ function render() {
   document.getElementById('ofertasck').classList.remove('on');
   document.getElementById('ofertas-row').style.display = 'none';
 
-  if (showE2 && SD.mrDOP > 0) {
-    document.getElementById('e2p').textContent = fmt(SD.virDOP);
-    document.getElementById('e2pr').textContent = fmtr(SD.virDOP);
-
-    document.getElementById('e2f').textContent = fmt(SD.mrDOP);
-    document.getElementById('e2fr').textContent = fmtr(SD.mrDOP);
-
-    document.getElementById('e2i').textContent = fmt(SD.isiDOP);
-    document.getElementById('e2ir').textContent = fmtr(SD.isiDOP);
-
-    document.getElementById('e2c').textContent = fmt(e2.cDOP) + '/mes';
-    document.getElementById('e2cr').textContent = fmtr(e2.cDOP) + '/mes';
-
-    document.getElementById('e2th').textContent = th;
-
-    var b2 = bdg(e2.sc);
-    anim('r2', 'p2', e2.sc, b2.k);
-
-    document.getElementById('b2').className = 'sbdg ' + b2.c;
-    document.getElementById('b2').textContent = b2.t;
-
+  if (showE2) {
+    var e2Insuficiente = SD.mrDOP <= 0 || e2.sc < 60;
+    var e2box = document.getElementById('e2box');
+    var e2lbl = document.getElementById('e2lbl');
     var bo2 = document.getElementById('btn-ofertas-e2');
-    if (bo2) bo2.style.display = 'flex';
-
-    var e2msg = document.getElementById('m2');
-    if (e2msg) {
-      var msgE2 = '';
-      if (e2.sc >= 85) msgE2 = 'Con esta propiedad tu probabilidad es alta. Es una opcion realista hoy.';
-      else if (e2.sc >= 70) msgE2 = 'Esta propiedad mejora tus posibilidades respecto al Escenario 1.';
-      else msgE2 = 'Este es el mejor escenario posible con tu perfil actual.';
-      e2msg.textContent = msgE2;
-    }
-
     var aBox = document.getElementById('asesor-wrap');
 
-    if (!SD.e2Reached) {
-      var topF = [];
-      if (e1.pExpTit < 50) topF.push('Construir historial crediticio en el rango del monto solicitado');
-      if (e1.pAt < 70) topF.push('Mantener pagos al dia de forma consistente');
-      if (e1.pD < 72) topF.push('Reducir las deudas actuales para mejorar la capacidad de pago');
-      if (e1.pEs < 55) topF.push('Aumentar antiguedad laboral o formalizar el tipo de empleo');
-      if (topF.length === 0) topF.push('Fortalecer el perfil financiero en las areas indicadas');
+    if (e2Insuficiente) {
+      // Ni reduciendo el precio del inmueble el perfil alcanza una probabilidad real.
+      // No mostramos una propiedad "sugerida" enganosa: solo recomendamos asesoria.
+      e2box.style.display = 'none';
+      if (bo2) bo2.style.display = 'none';
+      e2lbl.textContent = '📋 Recomendación para tu perfil';
+      e2lbl.style.color = '';
 
-      var fHTML = topF.slice(0, 2).map(function (f) {
+      var topFIns = [];
+      if (e1.pExpTit < 50) topFIns.push('Construir historial crediticio en el rango del monto solicitado');
+      if (e1.pAt < 70) topFIns.push('Mantener pagos al dia de forma consistente');
+      if (e1.pD < 72) topFIns.push('Reducir las deudas actuales para mejorar la capacidad de pago');
+      if (e1.pEs < 55) topFIns.push('Aumentar antiguedad laboral o formalizar el tipo de empleo');
+      if (topFIns.length === 0) topFIns.push('Fortalecer el perfil financiero en las areas indicadas');
+
+      var fHTMLIns = topFIns.slice(0, 2).map(function (f) {
         return '<li>' + f + '</li>';
       }).join('');
 
-      var cdBtn = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar un co-deudor para complementar tu experiencia crediticia</button>' : '';
+      var cdBtnIns = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar un co-deudor para complementar tu experiencia crediticia</button>' : '';
 
-      aBox.innerHTML = '<div class="asesor-box"><h4>Tu mejor escenario con el perfil actual</h4><p>Basado en tu informacion, esta es la propiedad con mayor probabilidad hoy. Para alcanzar una probabilidad mas alta, estas acciones concretas marcarian la diferencia:</p><ul class="asesor-actions">' + fHTML + '</ul>' + cdBtn + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a preparar tu perfil</button></div>';
-
+      aBox.innerHTML = '<div class="asesor-box"><h4>Aun no encontramos una propiedad realista con tu perfil</h4><p>Ni reduciendo el monto del inmueble tu perfil actual alcanza una probabilidad aceptable. Antes de buscar propiedad, te recomendamos fortalecer estos puntos:</p><ul class="asesor-actions">' + fHTMLIns + '</ul>' + cdBtnIns + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a mejorar tu perfil crediticio</button></div>';
       aBox.style.display = 'block';
     } else {
-      aBox.style.display = 'none';
-      aBox.innerHTML = '';
+      e2box.style.display = '';
+      e2lbl.textContent = '✅ Escenario 2 — Tu mejor opción hoy';
+      e2lbl.style.color = '#059669';
+
+      document.getElementById('e2p').textContent = fmt(SD.virDOP);
+      document.getElementById('e2pr').textContent = fmtr(SD.virDOP);
+
+      document.getElementById('e2f').textContent = fmt(SD.mrDOP);
+      document.getElementById('e2fr').textContent = fmtr(SD.mrDOP);
+
+      document.getElementById('e2i').textContent = fmt(SD.isiDOP);
+      document.getElementById('e2ir').textContent = fmtr(SD.isiDOP);
+
+      document.getElementById('e2c').textContent = fmt(e2.cDOP) + '/mes';
+      document.getElementById('e2cr').textContent = fmtr(e2.cDOP) + '/mes';
+
+      document.getElementById('e2th').textContent = th;
+
+      var b2 = bdg(e2.sc);
+      anim('r2', 'p2', e2.sc, b2.k);
+
+      document.getElementById('b2').className = 'sbdg ' + b2.c;
+      document.getElementById('b2').textContent = b2.t;
+
+      if (bo2) bo2.style.display = 'flex';
+
+      var e2msg = document.getElementById('m2');
+      if (e2msg) {
+        var msgE2 = '';
+        if (e2.sc >= 85) msgE2 = 'Con esta propiedad tu probabilidad es alta. Es una opcion realista hoy.';
+        else if (e2.sc >= 70) msgE2 = 'Esta propiedad mejora tus posibilidades respecto al Escenario 1.';
+        else msgE2 = 'Esta propiedad mejora tu probabilidad, aunque aun no es la ideal.';
+        e2msg.textContent = msgE2;
+      }
+
+      if (!SD.e2Reached) {
+        var topF = [];
+        if (e1.pExpTit < 50) topF.push('Construir historial crediticio en el rango del monto solicitado');
+        if (e1.pAt < 70) topF.push('Mantener pagos al dia de forma consistente');
+        if (e1.pD < 72) topF.push('Reducir las deudas actuales para mejorar la capacidad de pago');
+        if (e1.pEs < 55) topF.push('Aumentar antiguedad laboral o formalizar el tipo de empleo');
+        if (topF.length === 0) topF.push('Fortalecer el perfil financiero en las areas indicadas');
+
+        var fHTML = topF.slice(0, 2).map(function (f) {
+          return '<li>' + f + '</li>';
+        }).join('');
+
+        var cdBtn = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar un co-deudor para complementar tu experiencia crediticia</button>' : '';
+
+        aBox.innerHTML = '<div class="asesor-box"><h4>Tu mejor escenario con el perfil actual</h4><p>Basado en tu informacion, esta es la propiedad con mayor probabilidad hoy. Para alcanzar una probabilidad mas alta, estas acciones concretas marcarian la diferencia:</p><ul class="asesor-actions">' + fHTML + '</ul>' + cdBtn + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a preparar tu perfil</button></div>';
+
+        aBox.style.display = 'block';
+      } else {
+        aBox.style.display = 'none';
+        aBox.innerHTML = '';
+      }
     }
   }
 
