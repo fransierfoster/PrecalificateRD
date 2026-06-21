@@ -153,7 +153,9 @@ function TM() {
 }
 
 function TH() {
-  return MR === 'USD' ? 'Tasa ref. 8.50% anual (préstamos USD en RD)' : 'Tasa ref. 11.93% anual (BCRD ene 2026)';
+  var pctDOP = (TDOP * 12 * 100).toFixed(2);
+  var pctUSD = (TUSD * 12 * 100).toFixed(2);
+  return MR === 'USD' ? 'Tasa ref. ' + pctUSD + '% anual (préstamos USD en RD)' : 'Tasa ref. ' + pctDOP + '% anual (BCRD)';
 }
 
 function fmt(d) {
@@ -220,6 +222,10 @@ function toggleTheme() {
 }
 
 function openM() {
+  var dopEl = document.getElementById('tasaDopTxt');
+  var usdEl = document.getElementById('tasaUsdTxt');
+  if (dopEl) dopEl.textContent = (TDOP * 12 * 100).toFixed(2) + '%';
+  if (usdEl) usdEl.textContent = (TUSD * 12 * 100).toFixed(2) + '%';
   document.getElementById('modal').classList.add('open');
 }
 
@@ -444,7 +450,8 @@ function scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, 
   return {
     sc: sc, dti: dti, ltv: ltv, cDOP: cDOP,
     pD: pD, pL: pL, pI: pI, pAt: pAt, pAtFinal: pAtFinal,
-    pExp: pExp, pExpTit: pExpTit, pEs: pEs, pAct: pAct, ingEff: ingEff, dTot: dTot
+    pExp: pExp, pExpTit: pExpTit, pEs: pEs, pAct: pAct, ingEff: ingEff, dTot: dTot,
+    atraw: atraw, atpat: atpat
   };
 }
 
@@ -604,11 +611,18 @@ function buildWhy(e, antCred, tuvoPres) {
 
   if (!tuvoPres) {
     w.push({ t: 'w', x: 'Sin historial de prestamos previos', s: 'No haber tenido prestamos antes puede requerir un co-deudor con experiencia. Con buenos ingresos y estabilidad, muchos bancos aprueban con condiciones.' });
+  } else if (!e.atraw || e.atraw === 0) {
+    w.push({ t: 'ok', x: 'Historial de pagos impecable', s: 'Sin atrasos registrados. Es uno de los factores mas valorados por las entidades financieras.' });
   } else {
-    if (e.pAt === 100) w.push({ t: 'ok', x: 'Historial de pagos impecable', s: 'Sin atrasos registrados. Es uno de los factores mas valorados por las entidades financieras.' });
-    else if (e.pAt === 70) w.push({ t: 'w', x: 'Atraso leve registrado', s: 'Hubo un atraso menor a 30 dias. Es justificable pero mantener los pagos al dia es clave.' });
-    else if (e.pAt === 35) w.push({ t: 'w', x: 'Mora mayor - evento aislado', s: 'Un atraso mayor a 30 dias ocurrio una sola vez. Puede justificarse con historial limpio posterior.' });
-    else w.push({ t: 'b', x: 'Mora mayor recurrente', s: 'Patron de atrasos mayores a 30 dias. Este factor reduce significativamente la probabilidad.' });
+    var aislado = e.atpat === 'unico';
+    var diasTxt = e.atraw === 30 ? 'de hasta 30 dias' : e.atraw === 45 ? 'de 31 a 60 dias' : 'de mas de 60 dias';
+    if (e.atraw === 30 && aislado) {
+      w.push({ t: 'w', x: 'Atraso leve registrado', s: 'Hubo un atraso ' + diasTxt + ', evento aislado. Es justificable pero mantener los pagos al dia es clave.' });
+    } else if (aislado) {
+      w.push({ t: 'w', x: 'Mora mayor - evento aislado', s: 'Un atraso ' + diasTxt + ' ocurrio una sola vez. Puede justificarse con historial limpio posterior.' });
+    } else {
+      w.push({ t: 'b', x: 'Mora mayor recurrente', s: 'Patron de atrasos ' + diasTxt + ' que se repitio. Este factor reduce significativamente la probabilidad.' });
+    }
   }
 
   if (e.pExpTit >= 80) w.push({ t: 'ok', x: 'Experiencia crediticia solida', s: 'Tu historial es compatible con el monto que solicitas.' });
