@@ -245,7 +245,13 @@ function togCD() {
 }
 
 function scrollToForm() {
+  showS(1);
   document.getElementById('fa').scrollIntoView({ behavior: 'smooth' });
+}
+
+function volverInicio(e) {
+  if (e) e.preventDefault();
+  scrollToForm();
 }
 
 function ssc() {
@@ -650,20 +656,20 @@ function buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, 
     var tm = TM();
     var cDOP = prDOP > 0 ? (prDOP * tm) / (1 - Math.pow(1 + tm, -240)) : 0;
     var d2 = (deuDOP * 0.5 + cDOP + deuCDDOP) / Math.max(ingTot, 1);
-    var pD2 = d2 <= 0.30 ? 100 : d2 <= 0.33 ? 95 : d2 <= 0.36 ? 85 : d2 <= 0.40 ? 72 : 45;
-    var dl = Math.round(Math.min(95, s - e1.pD * 0.30 + pD2 * 0.30) - s);
+    var pD2 = P_DTI_SCORE(d2);
+    var dl = Math.round(Math.min(95, s - e1.pD * GET_PESO('dti') + pD2 * GET_PESO('dti')) - s);
     if (dl > 0) sims.push({ l: 'Reduces tus deudas actuales en un 50%', d: dl, b: Math.min(95, s + dl) });
   }
 
   if (!tieneCD) sims.push({ l: 'Agregas un co-deudor - aporta experiencia e ingresos al perfil combinado', d: 9, b: Math.min(95, s + 9) });
 
   if (e1.pExpTit < 80 && tuvoPres) {
-    var dl3 = Math.round(Math.min(95, s - e1.pExp * 0.12 + 100 * 0.12) - s);
+    var dl3 = Math.round(Math.min(95, s - e1.pExp * GET_PESO('exp') + 100 * GET_PESO('exp')) - s);
     if (dl3 > 0) sims.push({ l: 'Construyes historial crediticio en el rango del monto solicitado', d: dl3, b: Math.min(95, s + dl3) });
   }
 
   if (atraw > 0 && tuvoPres) {
-    var dl4 = Math.round(Math.min(95, s - e1.pAtFinal * 0.18 + 100 * 0.18) - s);
+    var dl4 = Math.round(Math.min(95, s - e1.pAtFinal * GET_PESO('mora') + 100 * GET_PESO('mora')) - s);
     if (dl4 > 0) sims.push({ l: 'Mantienes pagos al dia por 12 meses consecutivos', d: dl4, b: Math.min(95, s + dl4) });
   }
 
