@@ -4,17 +4,32 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-export async function updateParametro(formData: FormData) {
+export async function updateParametro(formData: FormData): Promise<{ ok: boolean; error?: string }> {
   const clave = String(formData.get('clave'));
   const valor = Number(formData.get('valor'));
+  const password = String(formData.get('adminPassword') || '');
+
+  const expected = process.env.ADMIN_PARAMS_PASSWORD;
+  if (!expected) {
+    return { ok: false, error: 'ADMIN_PARAMS_PASSWORD no configurada en el servidor' };
+  }
+  if (password !== expected) {
+    return { ok: false, error: 'Contraseña incorrecta' };
+  }
+  if (!clave || Number.isNaN(valor)) {
+    return { ok: false, error: 'Valor inválido' };
+  }
 
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from('precalifica_parametros')
     .update({ valor, updated_at: new Date().toISOString() })
     .eq('clave', clave);
 
+  if (error) return { ok: false, error: error.message };
+
   revalidatePath('/admin');
+  return { ok: true };
 }
 
 export async function updateLead(formData: FormData) {

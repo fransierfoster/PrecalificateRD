@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { updateParametro, signOut } from './actions';
+import { signOut } from './actions';
 import LeadsTable, { type Lead } from './LeadsTable';
+import ParamForm from './ParamForm';
 import './admin.css';
 
 type Parametro = {
@@ -12,10 +13,10 @@ type Parametro = {
 };
 
 const FACTOR_DEFS = [
-  { key: 'dti', pesoClave: 'peso_dti', label: 'Capacidad de endeudamiento (DTI)' },
+  { key: 'dti', pesoClave: 'peso_dti', label: 'Capacidad de endeudamiento (relación cuota/ingreso)' },
   { key: 'mora', pesoClave: 'peso_mora', label: 'Historial de pagos (mora)' },
   { key: 'exp', pesoClave: 'peso_exp', label: 'Experiencia crediticia' },
-  { key: 'ltv', pesoClave: 'peso_ltv', label: 'Monto de inicial (LTV)' },
+  { key: 'ltv', pesoClave: 'peso_ltv', label: 'Monto de inicial (porcentaje financiado del inmueble)' },
   { key: 'ing', pesoClave: 'peso_ing', label: 'Nivel de ingresos' },
   { key: 'est', pesoClave: 'peso_est', label: 'Estabilidad laboral' },
   { key: 'pais', pesoClave: 'peso_pais', label: 'País de residencia' },
@@ -64,26 +65,6 @@ function Histogram({ title, counts }: { title: string; counts: number[] }) {
   );
 }
 
-function ParamForm({ p, compact }: { p: Parametro; compact?: boolean }) {
-  return (
-    <form action={updateParametro} className="adm-param">
-      <label htmlFor={p.clave}>{p.descripcion || p.clave}</label>
-      <input type="hidden" name="clave" value={p.clave} />
-      <div className="adm-param-row">
-        <input
-          id={p.clave}
-          name="valor"
-          type="number"
-          step="any"
-          defaultValue={p.valor}
-          className={compact ? 'adm-input adm-input-sm' : 'adm-input'}
-        />
-        <button type="submit" className="adm-btn adm-btn-primary">Guardar</button>
-      </div>
-    </form>
-  );
-}
-
 function FactorCard({
   label,
   peso,
@@ -98,26 +79,18 @@ function FactorCard({
       <div className="adm-factor-head">
         <div className="adm-factor-title">{label}</div>
         {peso ? (
-          <form action={updateParametro} className="adm-factor-peso">
-            <input type="hidden" name="clave" value={peso.clave} />
-            <input
-              id={peso.clave}
-              name="valor"
-              type="number"
-              step="any"
-              defaultValue={peso.valor}
-              className="adm-input adm-input-sm"
-            />
-            <span className="adm-factor-pct">%</span>
-            <button type="submit" className="adm-btn adm-btn-primary">Guardar</button>
-          </form>
+          <div className="adm-factor-peso">
+            <ParamForm clave={peso.clave} valor={peso.valor} descripcion={peso.descripcion} compact />
+          </div>
         ) : null}
       </div>
       {subParams.length > 0 && (
         <details className="adm-factor-details">
           <summary>Ver / editar {subParams.length} subparámetros</summary>
           <div className="adm-params-grid">
-            {subParams.map((p) => <ParamForm key={p.clave} p={p} />)}
+            {subParams.map((p) => (
+              <ParamForm key={p.clave} clave={p.clave} valor={p.valor} descripcion={p.descripcion} />
+            ))}
           </div>
         </details>
       )}
@@ -220,7 +193,9 @@ export default async function AdminPage() {
           <div>
             <h3>Parámetros financieros</h3>
             <div className="adm-params-grid">
-              {finParams.map((p) => <ParamForm key={p.clave} p={p} />)}
+              {finParams.map((p) => (
+                <ParamForm key={p.clave} clave={p.clave} valor={p.valor} descripcion={p.descripcion} />
+              ))}
             </div>
           </div>
         )}
@@ -229,7 +204,9 @@ export default async function AdminPage() {
           <div key={cat}>
             <h3>{cat}</h3>
             <div className="adm-params-grid">
-              {groups[cat].map((p) => <ParamForm key={p.clave} p={p} />)}
+              {groups[cat].map((p) => (
+                <ParamForm key={p.clave} clave={p.clave} valor={p.valor} descripcion={p.descripcion} />
+              ))}
             </div>
           </div>
         ))}

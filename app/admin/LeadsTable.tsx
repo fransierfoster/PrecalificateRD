@@ -58,7 +58,7 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
   }, [leads, scoreMin, scoreMax, contactado, moneda]);
 
   function exportCSV() {
-    const headers = ['Fecha', 'Nombre', 'Apellido', 'Telefono', 'Email', 'Documento', 'Moneda', 'Monto', 'Score E1', 'Score E2', 'DTI', 'Quiere ofertas', 'Contactado', 'Asesor asignado', 'Resultado banco', 'Notas'];
+    const headers = ['Fecha', 'Nombre', 'Apellido', 'Telefono', 'Email', 'Documento', 'Moneda', 'Monto', 'Score E1', 'Score E2', 'Capacidad de endeudamiento', 'Quiere ofertas', 'Contactado', 'Asesor asignado', 'Resultado banco', 'Notas'];
     const rows = filtered.map((lead) => {
       const c = lead.precalifica_calculos;
       return [
@@ -162,7 +162,7 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
                       <>
                         {fmtMoney(c.vinm_dop, c.moneda_resultado)}<br />
                         E1: {c.score_e1}% {c.score_e2 != null ? `/ E2: ${c.score_e2}%` : ''}<br />
-                        DTI: {c.dti != null ? (c.dti * 100).toFixed(0) + '%' : '-'}
+                        Capacidad de endeudamiento: {c.dti != null ? (c.dti * 100).toFixed(0) + '%' : '-'}
                       </>
                     ) : <span className="adm-empty">sin datos</span>}
                   </td>
