@@ -578,7 +578,7 @@ function calc() {
 
   var e2Reached = e2.sc >= 85;
   var why = buildWhy(e1, antCred, tuvoPres);
-  var sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, tuvoPres);
+  var sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activos);
   var cp = credPerfil(e1.pExpTit, e1.pAt, antCred, tuvoPres);
 
   sendWebhook('calculo', {
@@ -649,7 +649,7 @@ function buildWhy(e, antCred, tuvoPres) {
   return w;
 }
 
-function buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, tuvoPres) {
+function buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activos) {
   var s = e1.sc, sims = [];
 
   if (deuDOP > 0) {
@@ -661,7 +661,14 @@ function buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, 
     if (dl > 0) sims.push({ l: 'Reduces tus deudas actuales en un 50%', d: dl, b: Math.min(95, s + dl) });
   }
 
-  if (!tieneCD) sims.push({ l: 'Agregas un co-deudor - aporta experiencia e ingresos al perfil combinado', d: 9, b: Math.min(95, s + 9) });
+  // Co-deudor: simulamos un perfil de apoyo modesto (40% del ingreso del titular,
+  // empleo formal, sin atrasos) y recalculamos con el motor real en vez de un % fijo.
+  if (!tieneCD) {
+    var ingCDsim = Math.round(ingDOP * 0.40);
+    var eCD = scoreFn(prDOP, iniDOP, ingTot + ingCDsim, deuDOP, 0, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, true, ingCDsim, ingDOP, 2, '1a3', ['tarjeta'], 0, 'na', 'formal', '2a5', pais, tuvoPres);
+    var dlCD = Math.round(Math.min(95, eCD.sc) - s);
+    if (dlCD > 0) sims.push({ l: 'Agregas un co-deudor con ingresos y buen historial al perfil combinado', d: dlCD, b: Math.min(95, s + dlCD) });
+  }
 
   if (e1.pExpTit < 80 && tuvoPres) {
     var dl3 = Math.round(Math.min(95, s - e1.pExp * GET_PESO('exp') + 100 * GET_PESO('exp')) - s);
@@ -673,7 +680,21 @@ function buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, 
     if (dl4 > 0) sims.push({ l: 'Mantienes pagos al dia por 12 meses consecutivos', d: dl4, b: Math.min(95, s + dl4) });
   }
 
-  if (e1.pAct === 0) sims.push({ l: 'Declaras ingresos adicionales verificables', d: 2, b: Math.min(95, s + 2) });
+  // Inicial: simulamos 5 puntos porcentuales adicionales de inicial sobre el valor del inmueble
+  if (e1.pL < 88) {
+    var ltvActual = e1.ltv;
+    var ltvSim = Math.max(0, ltvActual - 0.05);
+    var pL2 = P_LTV_SCORE(ltvSim);
+    var dl5 = Math.round(Math.min(95, s - e1.pL * GET_PESO('ltv') + pL2 * GET_PESO('ltv')) - s);
+    if (dl5 > 0) sims.push({ l: 'Aumentas tu inicial en 5 puntos porcentuales adicionales', d: dl5, b: Math.min(95, s + dl5) });
+  }
+
+  if (!activos || activos <= 0) {
+    var actBase = REMOTE_PARAMS ? REMOTE_PARAMS.act.noDeclara : 41;
+    var actSim = REMOTE_PARAMS ? REMOTE_PARAMS.act.menos10 : 57;
+    var dl6 = Math.round(Math.min(95, s - actBase * GET_PESO('act') + actSim * GET_PESO('act')) - s);
+    if (dl6 > 0) sims.push({ l: 'Declaras ingresos adicionales verificables', d: dl6, b: Math.min(95, s + dl6) });
+  }
 
   if (sims.length === 0) sims.push({ l: 'Tu perfil esta bien optimizado', d: 0, b: s });
 
