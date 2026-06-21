@@ -273,6 +273,109 @@
   font-size: 13px;
 }
 
+/* Pesos summary banner */
+.adm-peso-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.adm-peso-banner-ok {
+  background: #ECFDF5;
+  border: 1px solid #6EE7B7;
+  color: #065F46;
+}
+
+.adm-peso-banner-bad {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #991B1B;
+}
+
+.adm-peso-warn {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: .85;
+}
+
+/* Factor cards (peso principal + subparametros colapsables) */
+.adm-factor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adm-factor {
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.adm-factor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.adm-factor-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.adm-factor-peso {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adm-input-sm {
+  width: 70px;
+  margin-bottom: 0;
+  padding: 6px 8px;
+}
+
+.adm-factor-pct {
+  font-size: 12px;
+  color: #888;
+}
+
+.adm-factor-details {
+  margin-top: 10px;
+}
+
+.adm-factor-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--red);
+  list-style: none;
+  padding: 4px 0;
+}
+
+.adm-factor-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.adm-factor-details summary::before {
+  content: '▸ ';
+}
+
+.adm-factor-details[open] summary::before {
+  content: '▾ ';
+}
+
+.adm-factor-details .adm-params-grid {
+  margin-top: 10px;
+}
+
 /* Login */
 
 .adm-login-wrap {
