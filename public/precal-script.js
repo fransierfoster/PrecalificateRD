@@ -884,7 +884,11 @@ function irCd() {
 }
 
 function irLead() {
-  document.getElementById('lcard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  var el = document.getElementById('lead-title') || document.getElementById('lcard');
+  var header = document.querySelector('header');
+  var headerH = header ? header.getBoundingClientRect().height : 0;
+  var targetY = window.pageYOffset + el.getBoundingClientRect().top - headerH - 12;
+  window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
 }
 
 function renderResumen() {
