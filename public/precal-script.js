@@ -335,6 +335,13 @@ function chk(s) {
         el2.style.boxShadow = '0 0 0 3px rgba(192,22,28,.12)';
         ok = false;
       }
+
+      if (ATVAL === 'si' && document.getElementById('attyp').value && !document.getElementById('atpat').value) {
+        var el3 = document.getElementById('atpat');
+        el3.style.borderColor = 'var(--red)';
+        el3.style.boxShadow = '0 0 0 3px rgba(192,22,28,.12)';
+        ok = false;
+      }
     }
   }
 
@@ -358,18 +365,7 @@ function chk(s) {
 // ══════════════════════════════════════════════════
 // MOTOR DE SCORING v6 — calibrado
 // ══════════════════════════════════════════════════
-function prodScore(prods) {
-  if (!prods || prods.length === 0) return 0;
-  var best = 0, count = 0;
-  prods.forEach(function (p) {
-    if (p === 'hipoteca' && best < 100) best = 100;
-    else if (p === 'vehiculo' && best < 75) best = 75;
-    else if (p === 'personal' && best < 40) best = 40;
-    else if (p === 'tarjeta' && best < 45) best = 45;
-    if (p !== 'ninguno') count++;
-  });
-  return Math.min(100, best + (count >= 3 ? 10 : count >= 2 ? 5 : 0));
-}
+// prodScore reemplazada por P_EXP_PROD_SCORE (usa parametros remotos)
 
 function scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosNum, edad, tieneCD, ingCD, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres) {
   var tm = TM();
@@ -399,21 +395,20 @@ function scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, 
   var moraRec = (tuvoPres && atraw > 30 && atpat !== 'unico');
   var moraRecCD = (tieneCD && atrawCD > 30 && atpatCD !== 'unico');
 
-  // 3. Experiencia crediticia (12%)
+  // 3. Experiencia crediticia — usa parámetros remotos si disponibles
   var brTit = nr - expc;
-  var pMtoTit = brTit <= 0 ? 100 : brTit === 1 ? 75 : brTit === 2 ? 50 : brTit === 3 ? 25 : 8;
-  var antCM = { nunca: 0, menos1: 20, '1a3': 55, '3a5': 82, mas5: 100 };
-  var pAntCred = tuvoPres ? (antCM[antCred] || 0) : 0;
-  var pProdTit = tuvoPres ? prodScore(prods) : 0;
+  var pMtoTit = P_EXP_MONTO_SCORE(brTit);
+  var pAntCred = tuvoPres ? P_EXP_ANT_SCORE(antCred) : 0;
+  var pProdTit = tuvoPres ? P_EXP_PROD_SCORE(prods) : 0;
   var pExpTit = pMtoTit * 0.50 + pAntCred * 0.30 + pProdTit * 0.20;
   if (brTit >= 3) pExpTit = Math.min(40, pExpTit);
 
   var pExpCD = 0;
   if (tieneCD) {
     var brCD = nr - expcCD;
-    var pMtoCD = brCD <= 0 ? 100 : brCD === 1 ? 75 : brCD === 2 ? 50 : brCD === 3 ? 25 : 8;
-    var pAntCredCD2 = antCM[antCredCD] || 0;
-    var pProdCD = prodScore(prodsCD);
+    var pMtoCD = P_EXP_MONTO_SCORE(brCD);
+    var pAntCredCD2 = P_EXP_ANT_SCORE(antCredCD);
+    var pProdCD = P_EXP_PROD_SCORE(prodsCD);
     pExpCD = pMtoCD * 0.50 + pAntCredCD2 * 0.30 + pProdCD * 0.20;
     if (brCD >= 3) pExpCD = Math.min(40, pExpCD);
   }
@@ -422,23 +417,21 @@ function scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, 
   // 4. Inicial / monto financiado — usa parámetros remotos si disponibles
   var pL = P_LTV_SCORE(ltv);
 
-  // 5. Nivel de ingresos (12%)
-  var pI = ingEff > 200000 ? 100 : ingEff > 120000 ? 88 : ingEff > 80000 ? 75 : ingEff > 50000 ? 58 : ingEff > 30000 ? 38 : 15;
+  // 5. Nivel de ingresos — usa parámetros remotos si disponibles
+  var pI = P_ING_SCORE(ingEff);
 
-  // 6. Estabilidad laboral (10%)
-  var antMap = { mas5: 100, '2a5': 85, '1a2': 62, menos1: 28 };
-  var empMap = { formal: 100, pension: 95, remesa: 80, empresario: 72, independiente: 58 };
-  var pEsTit = (antMap[ant] || 0) * 0.50 + (empMap[emp] || 45) * 0.50;
+  // 6. Estabilidad laboral — usa parámetros remotos si disponibles
+  var pEsTit = P_EST_ANT_SCORE(ant) * 0.50 + P_EST_TIPO_SCORE(emp) * 0.50;
   var pEsCD = 0;
-  if (tieneCD && empCD) pEsCD = (antMap[antCD] || 0) * 0.50 + (empMap[empCD] || 45) * 0.50;
+  if (tieneCD && empCD) pEsCD = P_EST_ANT_SCORE(antCD) * 0.50 + P_EST_TIPO_SCORE(empCD) * 0.50;
   var pEs = tieneCD && empCD ? (pEsTit * 0.70 + pEsCD * 0.30) : pEsTit;
 
-  // 7. País (5%)
-  var pP = { DO: 100, US: 85, PR: 85, CA: 82, ES: 80, IT: 70 }[pais] || 60;
+  // 7. País — usa parámetros remotos si disponibles
+  var pP = P_PAIS_SCORE(pais);
 
-  // 8. Activos adicionales (2%), Edad (1%)
-  var pAct = activosDOP > 0 ? Math.min(28, Math.round(activosDOP / Math.max(ingDOP, 1) * 100)) : 0;
-  var pEd = edad >= 25 && edad <= 45 ? 100 : edad >= 46 && edad <= 55 ? 80 : edad >= 20 && edad < 25 ? 68 : edad >= 56 && edad <= 60 ? 52 : 25;
+  // 8. Activos adicionales, Edad — usa parámetros remotos si disponibles
+  var pAct = P_ACT_SCORE(activosDOP, ingDOP);
+  var pEd = P_EDAD_SCORE(edad);
 
   // Pesos — usa parámetros remotos si disponibles
   var sc = pD * GET_PESO('dti') + pAtFinal * GET_PESO('mora') + pExp * GET_PESO('exp') + pL * GET_PESO('ltv') + pI * GET_PESO('ing') + pEs * GET_PESO('est') + pP * GET_PESO('pais') + pAct * GET_PESO('act') + pEd * GET_PESO('edad');
@@ -505,7 +498,7 @@ function calc() {
   var antCred = tuvoPres ? (document.getElementById('antcred').value || 'nunca') : 'nunca';
   var prods = tuvoPres ? getProds('prod') : ['ninguno'];
   var atraw = (!tuvoPres || ATVAL === 'no') ? 0 : (parseInt(document.getElementById('attyp').value) || 30);
-  var atpat = atraw > 30 ? document.getElementById('atpat').value : 'na';
+  var atpat = atraw > 0 ? (document.getElementById('atpat').value || 'unico') : 'na';
   var tieneCD = document.getElementById('cdtog').checked;
   var activos = pn('activos');
 
@@ -1329,9 +1322,30 @@ function loadRemoteParams() {
         p22: m.ltv_p22, p5: m.ltv_p5
       },
       mora: {
-        sinAtrasos: m.mora_sin_atrasos, leve: m.mora_leve, aislada: m.mora_aislada,
-        recurrente: m.mora_recurrente, topeRec: m.mora_tope_recurrente, topeRecCD: m.mora_tope_recurrente_cd
+        sinAtrasos: m.mora_sin_atrasos,
+        a30Aislado: m.mora_30_aislado, a30Recurrente: m.mora_30_recurrente,
+        a3160Aislado: m.mora_3160_aislado, a3160Recurrente: m.mora_3160_recurrente,
+        a60Aislado: m.mora_60_aislado, a60Recurrente: m.mora_60_recurrente,
+        topeRec: m.mora_tope_recurrente, topeRecCD: m.mora_tope_recurrente_cd
       },
+      exp: {
+        antNunca: m.exp_ant_nunca, antMenos1: m.exp_ant_menos1, ant1a3: m.exp_ant_1a3, ant3a5: m.exp_ant_3a5, antMas5: m.exp_ant_mas5,
+        prodNinguno: m.exp_prod_ninguno, prodTarjeta: m.exp_prod_tarjeta, prodPersonal: m.exp_prod_personal,
+        prodVehiculo: m.exp_prod_vehiculo, prodHipoteca: m.exp_prod_hipoteca, prodCombo: m.exp_prod_combo,
+        gap0: m.exp_monto_gap0, gap1: m.exp_monto_gap1, gap2: m.exp_monto_gap2, gap3: m.exp_monto_gap3, gap4: m.exp_monto_gap4
+      },
+      ing: {
+        mas200k: m.ing_mas200k, r120_200k: m.ing_120_200k, r80_120k: m.ing_80_120k,
+        r50_80k: m.ing_50_80k, r30_50k: m.ing_30_50k, menos30k: m.ing_menos30k
+      },
+      est: {
+        formal: m.est_formal, empresario: m.est_empresario, remesa: m.est_remesa,
+        independiente: m.est_independiente, pension: m.est_pension,
+        antMenos1: m.est_ant_menos1, ant1a2: m.est_ant_1a2, ant2a5: m.est_ant_2a5, antMas5: m.est_ant_mas5
+      },
+      pais: { DO: m.pais_do, US: m.pais_us, PR: m.pais_pr, CA: m.pais_ca, ES: m.pais_es, otro: m.pais_otro },
+      act: { noDeclara: m.act_no_declara, menos10: m.act_menos10, r10_30: m.act_10_30, mas30: m.act_mas30 },
+      edad: { e18_24: m.edad_18_24, e25_45: m.edad_25_45, e46_55: m.edad_46_55, e56_60: m.edad_56_60, mas60: m.edad_mas60 },
       fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio }
     };
 
@@ -1385,15 +1399,104 @@ function P_LTV_SCORE(ltv) {
 
 function P_MORA_SCORE(atraw, atpat, tuvoPres) {
   if (!tuvoPres || atraw === 0) return REMOTE_PARAMS ? REMOTE_PARAMS.mora.sinAtrasos : 100;
-  if (!REMOTE_PARAMS) return atraw === 30 ? 68 : (atpat === 'unico' ? 28 : 3);
-
+  var aislado = atpat === 'unico';
+  if (!REMOTE_PARAMS) {
+    if (atraw === 30) return aislado ? 66 : 39;
+    if (atraw === 45) return aislado ? 29 : 13;
+    return aislado ? 18 : 9; // atraw === 90
+  }
   var m = REMOTE_PARAMS.mora;
-  return atraw === 30 ? m.leve : (atpat === 'unico' ? m.aislada : m.recurrente);
+  if (atraw === 30) return aislado ? m.a30Aislado : m.a30Recurrente;
+  if (atraw === 45) return aislado ? m.a3160Aislado : m.a3160Recurrente;
+  return aislado ? m.a60Aislado : m.a60Recurrente;
 }
 
 function P_TOPE_MORA(atraw, atpat, tuvoPres) {
   if (!tuvoPres || atraw === 0 || atraw === 30 || atpat === 'unico') return 96;
   return REMOTE_PARAMS ? REMOTE_PARAMS.mora.topeRec : 68;
+}
+
+function P_EXP_ANT_SCORE(antCred) {
+  if (!REMOTE_PARAMS) {
+    var def = { nunca: 32, menos1: 48, '1a3': 77, '3a5': 93, mas5: 97 };
+    return def[antCred] || 0;
+  }
+  var e = REMOTE_PARAMS.exp;
+  var map = { nunca: e.antNunca, menos1: e.antMenos1, '1a3': e.ant1a3, '3a5': e.ant3a5, mas5: e.antMas5 };
+  return map[antCred] || 0;
+}
+
+function P_EXP_PROD_SCORE(prods) {
+  if (!prods || prods.length === 0) return 0;
+  var p = REMOTE_PARAMS ? REMOTE_PARAMS.exp : { prodNinguno: 36, prodTarjeta: 59, prodPersonal: 73, prodVehiculo: 79, prodHipoteca: 92, prodCombo: 94 };
+  var best = 0, count = 0;
+  prods.forEach(function (x) {
+    if (x === 'hipoteca' && best < p.prodHipoteca) best = p.prodHipoteca;
+    else if (x === 'vehiculo' && best < p.prodVehiculo) best = p.prodVehiculo;
+    else if (x === 'personal' && best < p.prodPersonal) best = p.prodPersonal;
+    else if (x === 'tarjeta' && best < p.prodTarjeta) best = p.prodTarjeta;
+    if (x !== 'ninguno') count++;
+  });
+  if (count === 0) return p.prodNinguno;
+  return count >= 2 ? Math.max(best, p.prodCombo) : best;
+}
+
+function P_EXP_MONTO_SCORE(brecha) {
+  var def = { 0: 100, 1: 75, 2: 50, 3: 25, 4: 8 };
+  if (!REMOTE_PARAMS) return brecha <= 0 ? def[0] : (def[brecha] != null ? def[brecha] : def[4]);
+  var g = REMOTE_PARAMS.exp;
+  if (brecha <= 0) return g.gap0;
+  if (brecha === 1) return g.gap1;
+  if (brecha === 2) return g.gap2;
+  if (brecha === 3) return g.gap3;
+  return g.gap4;
+}
+
+function P_ING_SCORE(ingEff) {
+  if (!REMOTE_PARAMS) return ingEff > 200000 ? 100 : ingEff > 120000 ? 88 : ingEff > 80000 ? 75 : ingEff > 50000 ? 58 : ingEff > 30000 ? 38 : 15;
+  var i = REMOTE_PARAMS.ing;
+  return ingEff > 200000 ? i.mas200k : ingEff > 120000 ? i.r120_200k : ingEff > 80000 ? i.r80_120k : ingEff > 50000 ? i.r50_80k : ingEff > 30000 ? i.r30_50k : i.menos30k;
+}
+
+function P_EST_TIPO_SCORE(emp) {
+  if (!REMOTE_PARAMS) {
+    var def = { formal: 94, pension: 60, remesa: 78, empresario: 91, independiente: 70 };
+    return def[emp] || 45;
+  }
+  var e = REMOTE_PARAMS.est;
+  var map = { formal: e.formal, pension: e.pension, remesa: e.remesa, empresario: e.empresario, independiente: e.independiente };
+  return map[emp] != null ? map[emp] : 45;
+}
+
+function P_EST_ANT_SCORE(ant) {
+  if (!REMOTE_PARAMS) {
+    var def = { mas5: 98, '2a5': 87, '1a2': 64, menos1: 40 };
+    return def[ant] || 0;
+  }
+  var e = REMOTE_PARAMS.est;
+  var map = { mas5: e.antMas5, '2a5': e.ant2a5, '1a2': e.ant1a2, menos1: e.antMenos1 };
+  return map[ant] || 0;
+}
+
+function P_PAIS_SCORE(pais) {
+  if (!REMOTE_PARAMS) return { DO: 94, US: 78, PR: 77, CA: 75, ES: 75 }[pais] || 61;
+  var p = REMOTE_PARAMS.pais;
+  var map = { DO: p.DO, US: p.US, PR: p.PR, CA: p.CA, ES: p.ES };
+  return map[pais] != null ? map[pais] : p.otro;
+}
+
+function P_ACT_SCORE(activosDOP, ingDOP) {
+  if (!activosDOP || activosDOP <= 0) return REMOTE_PARAMS ? REMOTE_PARAMS.act.noDeclara : 41;
+  var ratio = activosDOP / Math.max(ingDOP, 1);
+  if (!REMOTE_PARAMS) return ratio < 0.10 ? 57 : ratio < 0.30 ? 75 : 86;
+  var a = REMOTE_PARAMS.act;
+  return ratio < 0.10 ? a.menos10 : ratio < 0.30 ? a.r10_30 : a.mas30;
+}
+
+function P_EDAD_SCORE(edad) {
+  if (!REMOTE_PARAMS) return edad >= 25 && edad <= 45 ? 81 : edad >= 46 && edad <= 55 ? 89 : edad >= 18 && edad < 25 ? 35 : edad >= 56 && edad <= 60 ? 66 : 50;
+  var e = REMOTE_PARAMS.edad;
+  return edad >= 25 && edad <= 45 ? e.e25_45 : edad >= 46 && edad <= 55 ? e.e46_55 : edad >= 18 && edad < 25 ? e.e18_24 : edad >= 56 && edad <= 60 ? e.e56_60 : e.mas60;
 }
 
 function GET_PESO(factor) {

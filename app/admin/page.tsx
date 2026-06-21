@@ -14,12 +14,18 @@ type Parametro = {
 const CATEGORIA_LABELS: Record<string, string> = {
   pesos: 'Pesos del motor (deben sumar 100)',
   dti: 'Score por DTI',
-  ltv: 'Score por LTV',
-  mora: 'Score por mora',
+  ltv: 'Score por LTV (inicial)',
+  mora: 'Score por mora (historial de pagos)',
+  exp: 'Score por experiencia crediticia',
+  ing: 'Score por nivel de ingresos',
+  est: 'Score por estabilidad laboral',
+  pais: 'Score por país de residencia',
+  act: 'Score por ingresos adicionales',
+  edad: 'Score por edad del solicitante',
   fin: 'Parámetros financieros',
 };
 
-const CATEGORIA_ORDER = ['pesos', 'dti', 'ltv', 'mora', 'fin'];
+const CATEGORIA_ORDER = ['pesos', 'dti', 'ltv', 'mora', 'exp', 'ing', 'est', 'pais', 'act', 'edad', 'fin'];
 
 const BUCKETS = [
   { label: '0–20%', min: 0, max: 20 },
