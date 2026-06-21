@@ -15,7 +15,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 header{background:var(--blk);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .logo{display:flex;align-items:center;gap:11px;text-decoration:none;}
 .logo img{width:44px;height:44px;object-fit:contain;border-radius:6px;}
-.logo-full img{width:auto;height:54px;border-radius:0;}
+.logo-full{position:relative;height:54px;overflow:visible;}
+.logo-full img{position:absolute;left:0;bottom:0;width:auto;height:108px;border-radius:0;}
 .lname{font-family:'Sora',sans-serif;font-size:17px;font-weight:800;}
 .lw{color:#FFF;}.lr{color:#C0161C;}.ld{color:#1D3A8A;}
 .hbadge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,.2);color:#6EE7B7;}
