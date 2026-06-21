@@ -388,6 +388,26 @@
   margin-top: 10px;
 }
 
+/* Collapsible sections: Leads, Calculos */
+.adm-section-details summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.adm-section-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.adm-section-details summary::before {
+  content: '▸ ';
+  color: var(--red);
+  font-weight: 700;
+}
+
+.adm-section-details[open] summary::before {
+  content: '▾ ';
+}
+
 /* Login */
 
 .adm-login-wrap {

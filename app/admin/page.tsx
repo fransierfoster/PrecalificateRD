@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { signOut } from './actions';
 import LeadsTable, { type Lead } from './LeadsTable';
+import CalculosTable, { type Calculo } from './CalculosTable';
 import ParamForm from './ParamForm';
 import './admin.css';
 
@@ -127,8 +128,9 @@ export default async function AdminPage() {
 
   const { data: calculos } = await supabase
     .from('precalifica_calculos')
-    .select('score_e1')
-    .returns<{ score_e1: number | null }[]>();
+    .select('*')
+    .order('created_at', { ascending: false })
+    .returns<Calculo[]>();
 
   const calculosCounts = bucketize((calculos || []).map((c) => c.score_e1));
   const leadsCounts = bucketize((leads || []).map((l) => l.precalifica_calculos?.score_e1));
@@ -213,8 +215,21 @@ export default async function AdminPage() {
       </div>
 
       <div className="adm-card">
-        <h2>Leads ({leads?.length || 0})</h2>
-        <LeadsTable leads={leads || []} />
+        <details className="adm-section-details">
+          <summary><h2 style={{ display: 'inline' }}>Leads ({leads?.length || 0})</h2></summary>
+          <div style={{ marginTop: 14 }}>
+            <LeadsTable leads={leads || []} />
+          </div>
+        </details>
+      </div>
+
+      <div className="adm-card">
+        <details className="adm-section-details">
+          <summary><h2 style={{ display: 'inline' }}>Cálculos realizados ({calculos?.length || 0})</h2></summary>
+          <div style={{ marginTop: 14 }}>
+            <CalculosTable calculos={calculos || []} />
+          </div>
+        </details>
       </div>
     </div>
   );
