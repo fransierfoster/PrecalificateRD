@@ -170,48 +170,51 @@ export default async function AdminPage() {
       </div>
 
       <div className="adm-card">
-        <h2>Parámetros del motor de scoring</h2>
+        <details className="adm-section-details">
+          <summary><h2 style={{ display: 'inline' }}>Parámetros del motor de scoring</h2></summary>
+          <div style={{ marginTop: 14 }}>
+            <div className={sumaOk ? 'adm-peso-banner adm-peso-banner-ok' : 'adm-peso-banner adm-peso-banner-bad'}>
+              <span>Suma de pesos de los 9 factores</span>
+              <span className={sumaOk ? 'adm-pill adm-pill-green' : 'adm-pill adm-pill-red'}>
+                {sumaPesos} / 100
+              </span>
+              {!sumaOk && <span className="adm-peso-warn">Ajusta los pesos para que sumen exactamente 100</span>}
+            </div>
 
-        <div className={sumaOk ? 'adm-peso-banner adm-peso-banner-ok' : 'adm-peso-banner adm-peso-banner-bad'}>
-          <span>Suma de pesos de los 9 factores</span>
-          <span className={sumaOk ? 'adm-pill adm-pill-green' : 'adm-pill adm-pill-red'}>
-            {sumaPesos} / 100
-          </span>
-          {!sumaOk && <span className="adm-peso-warn">Ajusta los pesos para que sumen exactamente 100</span>}
-        </div>
-
-        <div className="adm-factor-list">
-          {FACTOR_DEFS.map((f) => (
-            <FactorCard
-              key={f.key}
-              label={f.label}
-              peso={pesosByClave[f.pesoClave]}
-              subParams={groups[f.key] || []}
-            />
-          ))}
-        </div>
-
-        {finParams.length > 0 && (
-          <div>
-            <h3>Parámetros financieros</h3>
-            <div className="adm-params-grid">
-              {finParams.map((p) => (
-                <ParamForm key={p.clave} clave={p.clave} valor={p.valor} descripcion={p.descripcion} />
+            <div className="adm-factor-list">
+              {FACTOR_DEFS.map((f) => (
+                <FactorCard
+                  key={f.key}
+                  label={f.label}
+                  peso={pesosByClave[f.pesoClave]}
+                  subParams={groups[f.key] || []}
+                />
               ))}
             </div>
-          </div>
-        )}
 
-        {otrosCats.map((cat) => (
-          <div key={cat}>
-            <h3>{cat}</h3>
-            <div className="adm-params-grid">
-              {groups[cat].map((p) => (
-                <ParamForm key={p.clave} clave={p.clave} valor={p.valor} descripcion={p.descripcion} />
-              ))}
-            </div>
+            {finParams.length > 0 && (
+              <div>
+                <h3>Parámetros financieros</h3>
+                <div className="adm-params-grid">
+                  {finParams.map((p) => (
+                    <ParamForm key={p.clave} clave={p.clave} valor={p.valor} descripcion={p.descripcion} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {otrosCats.map((cat) => (
+              <div key={cat}>
+                <h3>{cat}</h3>
+                <div className="adm-params-grid">
+                  {groups[cat].map((p) => (
+                    <ParamForm key={p.clave} clave={p.clave} valor={p.valor} descripcion={p.descripcion} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        </details>
       </div>
 
       <div className="adm-card">
