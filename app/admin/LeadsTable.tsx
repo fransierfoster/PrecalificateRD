@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { updateLead } from './actions';
+import { updateLead, deleteLead } from './actions';
+import DeleteButton from './DeleteButton';
 
 type Calculo = {
   score_e1: number | null;
@@ -182,6 +183,13 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
                       <textarea name="notas" placeholder="Notas" defaultValue={lead.notas || ''} />
                       <button type="submit" className="adm-btn adm-btn-primary">Guardar</button>
                     </form>
+                  </td>
+                  <td>
+                    <DeleteButton
+                      id={lead.id}
+                      action={deleteLead}
+                      confirmText={`¿Eliminar el lead de ${lead.nombre || 'este contacto'}? Esta acción no se puede deshacer.`}
+                    />
                   </td>
                 </tr>
               );

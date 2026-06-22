@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { deleteCalculo } from './actions';
+import DeleteButton from './DeleteButton';
 
 export type Calculo = {
   id: string;
@@ -152,6 +154,7 @@ export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
               <th>Crédito</th>
               <th>Ingresos</th>
               <th>Co-deudor</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -186,6 +189,13 @@ export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
                   ) : (
                     <span className="adm-pill adm-pill-gray">No</span>
                   )}
+                </td>
+                <td>
+                  <DeleteButton
+                    id={c.id}
+                    action={deleteCalculo}
+                    confirmText="¿Eliminar este cálculo? Esta acción no se puede deshacer."
+                  />
                 </td>
               </tr>
             ))}

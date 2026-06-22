@@ -148,6 +148,20 @@
   background: var(--rdk);
 }
 
+.adm-btn-delete {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.adm-btn-delete:hover {
+  background: #FCA5A5;
+}
+
+.adm-btn-delete:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
 .adm-hist-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

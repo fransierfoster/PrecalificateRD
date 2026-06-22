@@ -49,6 +49,42 @@ export async function updateLead(formData: FormData) {
   revalidatePath('/admin');
 }
 
+function checkAdminPassword(formData: FormData): string | null {
+  const password = String(formData.get('adminPassword') || '');
+  const expected = process.env.ADMIN_PARAMS_PASSWORD;
+  if (!expected) return 'ADMIN_PARAMS_PASSWORD no configurada en el servidor';
+  if (password !== expected) return 'Contraseña incorrecta';
+  return null;
+}
+
+export async function deleteLead(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const id = String(formData.get('id'));
+  const passErr = checkAdminPassword(formData);
+  if (passErr) return { ok: false, error: passErr };
+  if (!id) return { ok: false, error: 'ID inválido' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from('precalifica_leads').delete().eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+export async function deleteCalculo(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const id = String(formData.get('id'));
+  const passErr = checkAdminPassword(formData);
+  if (passErr) return { ok: false, error: passErr };
+  if (!id) return { ok: false, error: 'ID inválido' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from('precalifica_calculos').delete().eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
