@@ -122,7 +122,7 @@ export default async function AdminPage() {
 
   const { data: leads } = await supabase
     .from('precalifica_leads')
-    .select('*, precalifica_calculos(score_e1, score_e2, moneda_resultado, vinm_dop, dti)')
+    .select('*, precalifica_calculos(*)')
     .order('created_at', { ascending: false })
     .returns<Lead[]>();
 

@@ -36,14 +36,14 @@ export type Calculo = {
   ingreso_codeudor_dop: number | null;
 };
 
-const EMP_LABELS: Record<string, string> = {
+export const EMP_LABELS: Record<string, string> = {
   formal: 'Formal', independiente: 'Independiente', empresario: 'Empresario',
   remesa: 'Diáspora', pension: 'Pensionado',
 };
-const ANT_LABELS: Record<string, string> = {
+export const ANT_LABELS: Record<string, string> = {
   menos1: '<1 año', '1a2': '1-2 años', '2a5': '2-5 años', mas5: '>5 años',
 };
-const ATRASO_LABELS: Record<number, string> = {
+export const ATRASO_LABELS: Record<number, string> = {
   0: 'Sin atrasos', 30: 'Hasta 30 días', 45: '31-60 días', 90: '+60 días',
 };
 
