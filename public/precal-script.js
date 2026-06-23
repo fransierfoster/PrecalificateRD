@@ -456,7 +456,7 @@ function scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, 
   return {
     sc: sc, dti: dti, ltv: ltv, cDOP: cDOP,
     pD: pD, pL: pL, pI: pI, pAt: pAt, pAtFinal: pAtFinal,
-    pExp: pExp, pExpTit: pExpTit, pEs: pEs, pAct: pAct, ingEff: ingEff, dTot: dTot,
+    pExp: pExp, pExpTit: pExpTit, pEs: pEs, pAct: pAct, pP: pP, pEd: pEd, ingEff: ingEff, dTot: dTot,
     atraw: atraw, atpat: atpat
   };
 }
@@ -591,7 +591,7 @@ function calc() {
   }
 
   var e2Reached = e2.sc >= 85;
-  var why = buildWhy(e1, antCred, tuvoPres, activos);
+  var why = buildWhy(e1, antCred, tuvoPres, activos, pais, edad);
   var sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activos);
   var cp = credPerfil(e1.pExpTit, e1.pAt, antCred, tuvoPres);
 
@@ -621,7 +621,7 @@ function calc() {
   render();
 }
 
-function buildWhy(e, antCred, tuvoPres, activos) {
+function buildWhy(e, antCred, tuvoPres, activos, pais, edad) {
   var w = [];
 
   if (e.pD >= 85) w.push({ t: 'ok', x: 'Excelente capacidad de endeudamiento', s: 'El porcentaje de tus ingresos que va a deudas es ' + Math.round(e.dti * 100) + '%. Esta dentro del rango ideal (menos del 33%).' });
@@ -658,7 +658,20 @@ function buildWhy(e, antCred, tuvoPres, activos) {
   else if (e.pEs >= 55) w.push({ t: 'w', x: 'Estabilidad laboral aceptable', s: 'Mas de 2 anos en el mismo empleo mejoraria tu evaluacion.' });
   else w.push({ t: 'b', x: 'Estabilidad laboral limitada', s: 'Menos de 1 ano en el empleo actual es un factor limitante para varias entidades.' });
 
+  if (e.pI >= 87) w.push({ t: 'ok', x: 'Nivel de ingresos alto', s: 'Tu ingreso mensual neto esta entre los mas favorables para calificar a montos hipotecarios mayores.' });
+  else if (e.pI >= 50) w.push({ t: 'w', x: 'Nivel de ingresos moderado', s: 'Tu ingreso cubre el perfil estandar. Un ingreso mayor mejoraria tu probabilidad.' });
+  else w.push({ t: 'b', x: 'Nivel de ingresos limitado', s: 'Tu ingreso mensual neto esta por debajo del rango mas favorable para el monto solicitado.' });
+
+  if (pais === 'DO') w.push({ t: 'ok', x: 'País de residencia favorable', s: 'Residir en República Dominicana facilita la verificación de tus ingresos y documentación.' });
+  else if (e.pP >= 75) w.push({ t: 'ok', x: 'País de residencia favorable', s: 'Tu país de residencia es bien valorado por las entidades financieras para créditos hipotecarios en RD.' });
+  else w.push({ t: 'w', x: 'País de residencia requiere documentación adicional', s: 'Residir fuera de los países con mayor flujo de diáspora puede implicar mas requisitos de verificación.' });
+
+  if (e.pEd >= 80) w.push({ t: 'ok', x: 'Edad favorable para la evaluación', s: 'Tu edad esta dentro del rango que las entidades consideran mas estable para un credito a largo plazo.' });
+  else if (e.pEd >= 55) w.push({ t: 'w', x: 'Edad dentro de un rango aceptable', s: 'Tu edad es un factor secundario, pero podria influir en el plazo maximo que te ofrezcan.' });
+  else w.push({ t: 'w', x: 'Edad puede limitar el plazo del prestamo', s: 'Algunas entidades ajustan el plazo maximo de financiamiento segun la edad del solicitante.' });
+
   if (activos > 0) w.push({ t: 'ok', x: 'Ingresos adicionales declarados', s: 'Tus ingresos complementarios suman a tu capacidad de pago efectiva.' });
+  else w.push({ t: 'w', x: 'No declaraste ingresos adicionales', s: 'Si recibes alquileres, remesas u otros ingresos verificables, declararlos podria mejorar tu probabilidad.' });
 
   return w;
 }
