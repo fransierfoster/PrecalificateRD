@@ -544,36 +544,50 @@ function calc() {
   var activosDOP = activos * rIn;
   var ingEffTotal = ingTot + activosDOP;
   var deuExist = deuDOP + deuCDDOP;
+
+  // Precio minimo de vivienda para Escenario 2 (evita sugerir propiedades
+  // irrealmente baratas solo para inflar el score). Ajustable en el admin,
+  // en USD, convertido a DOP con la tasa de cambio vigente.
+  var precioMinE2Usd = (REMOTE_PARAMS && REMOTE_PARAMS.fin && REMOTE_PARAMS.fin.precioMinE2Usd != null) ? REMOTE_PARAMS.fin.precioMinE2Usd : 40000;
+  var virDOPMin = Math.round(precioMinE2Usd * TC / 10000) * 10000;
+  var e2NoViable = virDOPMin >= prDOP; // no hay espacio entre el minimo y el precio original
+
   var cmaxHip = Math.max(0, ingEffTotal * 0.33 - deuExist);
   var mrDOP = cmaxHip > 0 ? Math.round((cmaxHip * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000 : 0;
   if (mrDOP >= prDOP) mrDOP = Math.max(0, prDOP - 100000);
 
   var virDOP = mrDOP > 0 ? Math.round(mrDOP / 0.80 / 10000) * 10000 : 0;
+  if (virDOP > 0 && virDOP < virDOPMin) virDOP = virDOPMin;
   var isiMin = virDOP > 0 ? Math.round(virDOP * 0.20 / 10000) * 10000 : 0;
   var isiDOP = Math.min(iniDOP, virDOP > 0 ? virDOP * 0.80 : 0);
   if (isiDOP < isiMin) isiDOP = isiMin;
   if (virDOP > 0) mrDOP = Math.max(0, virDOP - isiDOP);
 
-  var e2 = mrDOP > 0 ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres) : { sc: 0, cDOP: 0 };
+  var e2 = (!e2NoViable && mrDOP > 0) ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres) : { sc: 0, cDOP: 0 };
 
-  var ratios = [0.30, 0.28, 0.25], ri = 0;
-  while (e2.sc < 85 && ri < ratios.length) {
-    var cap2 = ingEffTotal * ratios[ri] - deuExist;
-    if (cap2 > 0) {
-      var mr2 = Math.round((Math.max(0, cap2) * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000;
-      if (mr2 > 0 && mr2 < prDOP) {
-        var vir2 = Math.round(mr2 / 0.80 / 10000) * 10000;
-        var isi2min = Math.round(vir2 * 0.20 / 10000) * 10000;
-        var isi2 = Math.min(iniDOP, vir2 * 0.80);
-        if (isi2 < isi2min) isi2 = isi2min;
-        mr2 = Math.max(0, vir2 - isi2);
-        var e2t = scoreFn(mr2, isi2, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres);
-        if (e2t.sc > e2.sc) {
-          mrDOP = mr2; virDOP = vir2; isiDOP = isi2; e2 = e2t;
+  if (!e2NoViable) {
+    var ratios = [0.30, 0.28, 0.25], ri = 0;
+    while (e2.sc < 85 && ri < ratios.length) {
+      var cap2 = ingEffTotal * ratios[ri] - deuExist;
+      if (cap2 > 0) {
+        var mr2 = Math.round((Math.max(0, cap2) * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000;
+        if (mr2 > 0 && mr2 < prDOP) {
+          var vir2 = Math.round(mr2 / 0.80 / 10000) * 10000;
+          if (vir2 < virDOPMin) vir2 = virDOPMin;
+          if (vir2 < prDOP) {
+            var isi2min = Math.round(vir2 * 0.20 / 10000) * 10000;
+            var isi2 = Math.min(iniDOP, vir2 * 0.80);
+            if (isi2 < isi2min) isi2 = isi2min;
+            mr2 = Math.max(0, vir2 - isi2);
+            var e2t = scoreFn(mr2, isi2, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres);
+            if (e2t.sc > e2.sc) {
+              mrDOP = mr2; virDOP = vir2; isiDOP = isi2; e2 = e2t;
+            }
+          }
         }
       }
+      ri++;
     }
-    ri++;
   }
 
   var e2Reached = e2.sc >= 85;
@@ -601,7 +615,7 @@ function calc() {
     tieneCD: tieneCD, ingCDDOP: ingCDDOP, ingDOP: ingDOP,
     expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
     atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
-    e2Reached: e2Reached, rIn: rIn, mp: mp
+    e2Reached: e2Reached, rIn: rIn, mp: mp, virDOPMin: virDOPMin, e2NoViable: e2NoViable
   };
 
   render();
@@ -763,7 +777,7 @@ function render() {
   document.getElementById('ofertas-row').style.display = 'none';
 
   if (showE2) {
-    var e2Insuficiente = SD.mrDOP <= 0 || e2.sc < 60;
+    var e2Insuficiente = SD.mrDOP <= 0 || e2.sc < 80;
     var e2box = document.getElementById('e2box');
     var e2lbl = document.getElementById('e2lbl');
     var bo2 = document.getElementById('btn-ofertas-e2');
@@ -1423,7 +1437,7 @@ function loadRemoteParams() {
       pais: { DO: m.pais_do, US: m.pais_us, PR: m.pais_pr, CA: m.pais_ca, ES: m.pais_es, otro: m.pais_otro },
       act: { noDeclara: m.act_no_declara, menos10: m.act_menos10, r10_30: m.act_10_30, mas30: m.act_mas30 },
       edad: { e18_24: m.edad_18_24, e25_45: m.edad_25_45, e46_55: m.edad_46_55, e56_60: m.edad_56_60, mas60: m.edad_mas60 },
-      fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio }
+      fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio, precioMinE2Usd: m.fin_precio_min_e2_usd }
     };
 
     PARAMS_LOADED = true;
