@@ -591,7 +591,7 @@ function calc() {
   }
 
   var e2Reached = e2.sc >= 85;
-  var why = buildWhy(e1, antCred, tuvoPres);
+  var why = buildWhy(e1, antCred, tuvoPres, activos);
   var sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activos);
   var cp = credPerfil(e1.pExpTit, e1.pAt, antCred, tuvoPres);
 
@@ -621,7 +621,7 @@ function calc() {
   render();
 }
 
-function buildWhy(e, antCred, tuvoPres) {
+function buildWhy(e, antCred, tuvoPres, activos) {
   var w = [];
 
   if (e.pD >= 85) w.push({ t: 'ok', x: 'Excelente capacidad de endeudamiento', s: 'El porcentaje de tus ingresos que va a deudas es ' + Math.round(e.dti * 100) + '%. Esta dentro del rango ideal (menos del 33%).' });
@@ -658,7 +658,7 @@ function buildWhy(e, antCred, tuvoPres) {
   else if (e.pEs >= 55) w.push({ t: 'w', x: 'Estabilidad laboral aceptable', s: 'Mas de 2 anos en el mismo empleo mejoraria tu evaluacion.' });
   else w.push({ t: 'b', x: 'Estabilidad laboral limitada', s: 'Menos de 1 ano en el empleo actual es un factor limitante para varias entidades.' });
 
-  if (e.pAct > 0) w.push({ t: 'ok', x: 'Ingresos adicionales declarados', s: 'Tus ingresos complementarios suman a tu capacidad de pago efectiva.' });
+  if (activos > 0) w.push({ t: 'ok', x: 'Ingresos adicionales declarados', s: 'Tus ingresos complementarios suman a tu capacidad de pago efectiva.' });
 
   return w;
 }
