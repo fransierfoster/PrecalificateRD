@@ -124,7 +124,7 @@ export const PRECAL_BODY_HTML = `<div class="thbar"><span class="thlbl" id="thlb
       <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
     </button>
   </div>
-  <a class="fab fab-email" href="mailto:perfecthouserd@gmail.com?subject=Sugerencia%20PrecalificateRD&body=Hola%2C%20quiero%20compartir%20mi%20opini%C3%B3n%20sobre%20PrecalificateRD%3A" title="Enviar sugerencia">
+  <a class="fab fab-email" href="mailto:precalificaterd@gmail.com?subject=Sugerencia%20PrecalificateRD&body=Hola%2C%20quiero%20compartir%20mi%20opini%C3%B3n%20sobre%20PrecalificateRD%3A" title="Enviar sugerencia">
     <span class="fab-tooltip">Enviar sugerencia</span>
     <svg viewBox="0 0 24 24" fill="white" width="26" height="26"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
   </a>
