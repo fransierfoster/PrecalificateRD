@@ -662,13 +662,9 @@ function buildWhy(e, antCred, tuvoPres, activos, pais, edad) {
   else if (e.pI >= 50) w.push({ t: 'w', x: 'Nivel de ingresos moderado', s: 'Tu ingreso cubre el perfil estandar. Un ingreso mayor mejoraria tu probabilidad.' });
   else w.push({ t: 'b', x: 'Nivel de ingresos limitado', s: 'Tu ingreso mensual neto esta por debajo del rango mas favorable para el monto solicitado.' });
 
-  if (pais === 'DO') w.push({ t: 'ok', x: 'País de residencia favorable', s: 'Residir en República Dominicana facilita la verificación de tus ingresos y documentación.' });
-  else if (e.pP >= 75) w.push({ t: 'ok', x: 'País de residencia favorable', s: 'Tu país de residencia es bien valorado por las entidades financieras para créditos hipotecarios en RD.' });
-  else w.push({ t: 'w', x: 'País de residencia requiere documentación adicional', s: 'Residir fuera de los países con mayor flujo de diáspora puede implicar mas requisitos de verificación.' });
-
-  if (e.pEd >= 80) w.push({ t: 'ok', x: 'Edad favorable para la evaluación', s: 'Tu edad esta dentro del rango que las entidades consideran mas estable para un credito a largo plazo.' });
-  else if (e.pEd >= 55) w.push({ t: 'w', x: 'Edad dentro de un rango aceptable', s: 'Tu edad es un factor secundario, pero podria influir en el plazo maximo que te ofrezcan.' });
-  else w.push({ t: 'w', x: 'Edad puede limitar el plazo del prestamo', s: 'Algunas entidades ajustan el plazo maximo de financiamiento segun la edad del solicitante.' });
+  // Pais de residencia y edad no se muestran aqui: son factores de ponderacion
+  // interna del modelo, pero exponerlos como "razon" del resultado podria
+  // interpretarse como un criterio discriminatorio hacia el usuario.
 
   if (activos > 0) w.push({ t: 'ok', x: 'Ingresos adicionales declarados', s: 'Tus ingresos complementarios suman a tu capacidad de pago efectiva.' });
   else w.push({ t: 'w', x: 'No declaraste ingresos adicionales', s: 'Si recibes alquileres, remesas u otros ingresos verificables, declararlos podria mejorar tu probabilidad.' });
