@@ -1377,6 +1377,14 @@ var QUIERE_OFERTAS = false;
 function solicitarOfertas(escenario) {
   QUIERE_OFERTAS = true;
 
+  var esAsesoria = escenario === 1 && SD.e1.sc < 70;
+  var txt = document.getElementById('ofertas-text');
+  if (txt) {
+    txt.textContent = esAsesoria
+      ? '🤝 Deseo recibir asesoría para mejorar mi perfil crediticio'
+      : '🏠 Deseo recibir ofertas de propiedades dentro de mi rango de precio';
+  }
+
   document.getElementById('ofertasck').classList.add('on');
   document.getElementById('ofertas-row').style.display = 'flex';
 
@@ -1385,7 +1393,7 @@ function solicitarOfertas(escenario) {
   var btn = document.getElementById('btn-ofertas-e' + escenario);
   if (btn) {
     btn.textContent = 'Registrado! Completa tus datos abajo';
-    btn.style.background = '#065F46';
+    btn.style.background = esAsesoria ? bdg(SD.e1.sc).k : '#065F46';
   }
 }
 
