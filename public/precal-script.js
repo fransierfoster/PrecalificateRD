@@ -1319,6 +1319,14 @@ function sendWebhook(tipo, data, lead) {
       }).catch(function (err) {
         console.log('Supabase lead error:', err);
       });
+
+      fetch('/api/notify-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead: lead, quiereOfertas: !!data.quiereOfertas, sd: SD })
+      }).catch(function (err) {
+        console.log('Notify lead error:', err);
+      });
     }
   } catch (err) {
     console.log('sendWebhook err:', err);
