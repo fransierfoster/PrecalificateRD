@@ -777,10 +777,15 @@ function render() {
 
   var bo1 = document.getElementById('btn-ofertas-e1');
   if (bo1) {
-    bo1.textContent = e1.sc >= 70
-      ? '🏠 Quiero recibir ofertas dentro de mi mejor probabilidad de aprobacion'
-      : '🤝 Quiero asesoria para mejorar mi perfil crediticio';
-    bo1.style.background = '';
+    if (e1.sc >= 70) {
+      bo1.textContent = '🏠 Quiero recibir ofertas dentro de mi mejor probabilidad de aprobacion';
+      bo1.style.background = '';
+      bo1.style.boxShadow = '';
+    } else {
+      bo1.textContent = '🤝 Quiero asesoria para mejorar mi perfil crediticio';
+      bo1.style.background = b1.k;
+      bo1.style.boxShadow = '0 4px 15px ' + b1.k + '4D';
+    }
   }
 
   QUIERE_OFERTAS = false;
