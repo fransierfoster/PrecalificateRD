@@ -777,7 +777,9 @@ function render() {
 
   var bo1 = document.getElementById('btn-ofertas-e1');
   if (bo1) {
-    bo1.textContent = 'Quiero recibir ofertas dentro de mi mejor probabilidad de aprobacion';
+    bo1.textContent = e1.sc >= 70
+      ? '🏠 Quiero recibir ofertas dentro de mi mejor probabilidad de aprobacion'
+      : '🤝 Quiero asesoria para mejorar mi perfil crediticio';
     bo1.style.background = '';
   }
 
