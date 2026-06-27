@@ -1143,14 +1143,45 @@ function compartir() {
   if (!SD || !SD.e1) return;
 
   var e1 = SD.e1;
-  var nivel = e1.sc >= 90 ? 'Muy alta ✅' : e1.sc >= 80 ? 'Alta ✅' : e1.sc >= 70 ? 'Moderada 🟡' : e1.sc >= 60 ? 'Baja 🟠' : 'Muy baja 🔴';
+  var nivelTxt = function (sc) {
+    return sc >= 90 ? 'Muy alta ✅' : sc >= 80 ? 'Alta ✅' : sc >= 70 ? 'Moderada 🟡' : sc >= 60 ? 'Baja 🟠' : 'Muy baja 🔴';
+  };
 
   var txt = '🏠 Mi precalificación en PrecalificateRD\n\n';
+  txt += '📋 Escenario 1 — La propiedad que quieres\n';
   txt += '💰 Propiedad evaluada: ' + fmt(SD.vinmDOP) + '\n';
   txt += '🏦 Monto a financiar: ' + fmt(SD.prDOP) + '\n';
   txt += '📅 Cuota mensual estimada: ' + fmt(e1.cDOP) + '\n';
-  txt += '📊 Probabilidad de aprobación: ' + e1.sc + '% (' + nivel + ')\n\n';
-  txt += 'Me he evaluado en *PrecalificateRD*, accede y has tu precalificación ¡totalmente gratis y sin acceder a tu score!\n';
+  txt += '📊 Probabilidad de aprobación: ' + e1.sc + '% (' + nivelTxt(e1.sc) + ')\n';
+
+  var showE2 = e1.sc < 80;
+  var e2Insuficiente = !SD.e2 || SD.mrDOP <= 0 || SD.e2.sc < 80;
+  if (showE2 && !e2Insuficiente) {
+    txt += '\n✅ Escenario 2 — Tu mejor opción hoy\n';
+    txt += '💰 Propiedad sugerida: ' + fmt(SD.virDOP) + '\n';
+    txt += '🏦 Monto a financiar: ' + fmt(SD.mrDOP) + '\n';
+    txt += '📊 Probabilidad de aprobación: ' + SD.e2.sc + '% (' + nivelTxt(SD.e2.sc) + ')\n';
+  }
+
+  if (SD.why && SD.why.length) {
+    var wh = { ok: '✓', w: '⚠', b: '✕' };
+    txt += '\n🔍 ¿Por qué este resultado?\n';
+    SD.why.forEach(function (w) {
+      txt += (wh[w.t] || '•') + ' ' + w.x + '\n';
+    });
+  }
+
+  if (SD.sims && SD.sims.length) {
+    var simsConMejora = SD.sims.filter(function (s) { return s.d > 0; });
+    if (simsConMejora.length) {
+      txt += '\n📈 Acciones que podrían mejorar tu probabilidad:\n';
+      simsConMejora.forEach(function (s) {
+        txt += '+' + s.d + '% ' + s.l + '\n';
+      });
+    }
+  }
+
+  txt += '\nMe he evaluado en *PrecalificateRD*, accede y has tu precalificación ¡totalmente gratis y sin acceder a tu score!\n';
   txt += 'https://precalificaterd.com';
 
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
