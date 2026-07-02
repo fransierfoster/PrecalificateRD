@@ -201,6 +201,17 @@ function updPrecio() {
   var s = mp === 'USD' ? '$' : 'RD$';
   document.getElementById('pxp').textContent = s;
   document.getElementById('pxini').textContent = s;
+  autoIni();
+}
+
+function autoIni() {
+  var vinmRaw = pn('vinm');
+  if (!vinmRaw) return;
+  var ini10 = Math.round(vinmRaw * 0.10);
+  var iniEl = document.getElementById('ini');
+  if (iniEl) {
+    iniEl.value = ini10.toLocaleString('en-US');
+  }
 }
 
 function togT() {
@@ -354,6 +365,50 @@ function chk(s) {
         el3.style.boxShadow = '0 0 0 3px rgba(192,22,28,.12)';
         ok = false;
       }
+    }
+  }
+
+  // Validaciones de precio mínimo e inicial mínimo (solo paso 3)
+  if (s === 3) {
+    var mp3 = document.getElementById('mprecio').value;
+    var mpR3 = mp3 === 'USD' ? TC : 1;
+    var vinmVal = pn('vinm') * mpR3;
+    var iniVal = pn('ini') * mpR3;
+
+    var precioMinUsd = (REMOTE_PARAMS && REMOTE_PARAMS.fin && REMOTE_PARAMS.fin.precioMinE2Usd != null) ? REMOTE_PARAMS.fin.precioMinE2Usd : 40000;
+    var precioMinDOP = precioMinUsd * TC;
+
+    var vinmErrEl = document.getElementById('vinm-err');
+    var iniErrEl = document.getElementById('ini-err');
+
+    if (vinmErrEl) vinmErrEl.style.display = 'none';
+    if (iniErrEl) iniErrEl.style.display = 'none';
+
+    if (vinmVal > 0 && vinmVal < precioMinDOP) {
+      var montoMinFmt = mp3 === 'USD'
+        ? '$' + Math.round(precioMinUsd).toLocaleString('en-US') + ' USD'
+        : 'RD$' + Math.round(precioMinDOP).toLocaleString('en-US');
+      if (vinmErrEl) {
+        vinmErrEl.textContent = '⚠️ El precio mínimo de una vivienda para financiamiento hipotecario en República Dominicana ronda los ' + montoMinFmt + '. Esta es una calculadora hipotecaria profesional.';
+        vinmErrEl.style.display = 'block';
+      }
+      var vinmEl = document.getElementById('vinm');
+      if (vinmEl) { vinmEl.style.borderColor = 'var(--red)'; vinmEl.style.boxShadow = '0 0 0 3px rgba(192,22,28,.12)'; }
+      ok = false;
+    }
+
+    if (vinmVal >= precioMinDOP && iniVal > 0 && iniVal < vinmVal * 0.10) {
+      var ini10DOP = vinmVal * 0.10;
+      var ini10Fmt = mp3 === 'USD'
+        ? '$' + Math.round(ini10DOP / TC).toLocaleString('en-US') + ' USD'
+        : 'RD$' + Math.round(ini10DOP).toLocaleString('en-US');
+      if (iniErrEl) {
+        iniErrEl.textContent = '⚠️ El inicial mínimo requerido para un financiamiento hipotecario es el 10% del valor del inmueble (' + ini10Fmt + ').';
+        iniErrEl.style.display = 'block';
+      }
+      var iniEl2 = document.getElementById('ini');
+      if (iniEl2) { iniEl2.style.borderColor = 'var(--red)'; iniEl2.style.boxShadow = '0 0 0 3px rgba(192,22,28,.12)'; }
+      ok = false;
     }
   }
 
