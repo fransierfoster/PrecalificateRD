@@ -895,7 +895,7 @@ function render() {
       aBox.style.display = 'block';
     } else {
       e2box.style.display = '';
-      e2lbl.textContent = '✅ Escenario 2 — Tu mejor opción hoy';
+      e2lbl.textContent = '✅ Escenario 2 — Tu mejor opción con el inicial que tienes disponible';
       e2lbl.style.color = '#059669';
 
       document.getElementById('e2p').textContent = fmt(SD.virDOP);
@@ -943,7 +943,7 @@ function render() {
 
         var cdBtn = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar un co-deudor para complementar tu experiencia crediticia</button>' : '';
 
-        aBox.innerHTML = '<div class="asesor-box"><h4>Tu mejor opción con el inicial que tienes disponible</h4><p>Basado en tu información, esta es la propiedad con mayor probabilidad con el inicial disponible. Para alcanzar una probabilidad más alta, estas acciones concretas marcarían la diferencia:</p><ul class="asesor-actions">' + fHTML + '</ul>' + cdBtn + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a preparar tu perfil</button></div>';
+        aBox.innerHTML = '<div class="asesor-box"><h4>Tu mejor escenario con el perfil actual</h4><p>Basado en tu información, esta es la propiedad con mayor probabilidad hoy. Para alcanzar una probabilidad más alta, estas acciones concretas marcarían la diferencia:</p><ul class="asesor-actions">' + fHTML + '</ul>' + cdBtn + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a preparar tu perfil</button></div>';
 
         aBox.style.display = 'block';
       } else {
@@ -1228,7 +1228,7 @@ function compartir() {
   var showE2 = e1.sc < 80;
   var e2Insuficiente = !SD.e2 || SD.mrDOP <= 0 || SD.e2.sc < 80;
   if (showE2 && !e2Insuficiente) {
-    txt += '\n✅ Escenario 2 — Tu mejor opción hoy\n';
+    txt += '\n✅ Escenario 2 — Tu mejor opción con el inicial que tienes disponible\n';
     txt += '💰 Propiedad sugerida: ' + fmt(SD.virDOP) + '\n';
     txt += '🏦 Monto a financiar: ' + fmt(SD.mrDOP) + '\n';
     txt += '📊 Probabilidad de aprobación: ' + SD.e2.sc + '% (' + nivelTxt(SD.e2.sc) + ')\n';
