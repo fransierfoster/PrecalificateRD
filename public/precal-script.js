@@ -827,7 +827,7 @@ function render() {
     }).join('');
   }
 
-  var showE2 = e1.sc < 80;
+  var showE2 = e1.sc < 80 && SD.e2 && SD.e2.sc >= 80;
   document.getElementById('e2wrap').style.display = showE2 ? 'block' : 'none';
 
   var bo1 = document.getElementById('btn-ofertas-e1');
