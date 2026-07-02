@@ -594,58 +594,37 @@ function calc() {
 
   var e1 = scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres);
 
-  // E2 - solo si E1 < 80%
+  // E2 - solo si E1 < 80%: mantiene el inicial real del cliente y busca el precio
+  // de venta más alto posible, menor que el E1, donde la probabilidad llega a 80%+.
   var tm = TM();
   var activosDOP = activos * rIn;
   var ingEffTotal = ingTot + activosDOP;
   var deuExist = deuDOP + deuCDDOP;
 
-  // Precio minimo de vivienda para Escenario 2 (evita sugerir propiedades
-  // irrealmente baratas solo para inflar el score). Ajustable en el admin,
-  // en USD, convertido a DOP con la tasa de cambio vigente.
   var precioMinE2Usd = (REMOTE_PARAMS && REMOTE_PARAMS.fin && REMOTE_PARAMS.fin.precioMinE2Usd != null) ? REMOTE_PARAMS.fin.precioMinE2Usd : 40000;
   var virDOPMin = Math.round(precioMinE2Usd * TC / 10000) * 10000;
-  var e2NoViable = virDOPMin >= prDOP; // no hay espacio entre el minimo y el precio original
+  var e2NoViable = virDOPMin >= vinmDOP; // no hay precio menor posible al minimo
 
-  var cmaxHip = Math.max(0, ingEffTotal * 0.33 - deuExist);
-  var mrDOP = cmaxHip > 0 ? Math.round((cmaxHip * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000 : 0;
-  if (mrDOP >= prDOP) mrDOP = Math.max(0, prDOP - 100000);
-
-  var virDOP = mrDOP > 0 ? Math.round(mrDOP / 0.80 / 10000) * 10000 : 0;
-  if (virDOP > 0 && virDOP < virDOPMin) virDOP = virDOPMin;
-  var isiMin = virDOP > 0 ? Math.round(virDOP * 0.20 / 10000) * 10000 : 0;
-  var isiDOP = Math.min(iniDOP, virDOP > 0 ? virDOP * 0.80 : 0);
-  if (isiDOP < isiMin) isiDOP = isiMin;
-  if (virDOP > 0) mrDOP = Math.max(0, virDOP - isiDOP);
-
-  var e2 = (!e2NoViable && mrDOP > 0) ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres) : { sc: 0, cDOP: 0 };
+  var e2 = { sc: 0, cDOP: 0 };
+  var mrDOP = 0, virDOP = 0, isiDOP = iniDOP;
 
   if (!e2NoViable) {
-    var ratios = [0.30, 0.28, 0.25], ri = 0;
-    while (e2.sc < 85 && ri < ratios.length) {
-      var cap2 = ingEffTotal * ratios[ri] - deuExist;
-      if (cap2 > 0) {
-        var mr2 = Math.round((Math.max(0, cap2) * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000;
-        if (mr2 > 0 && mr2 < prDOP) {
-          var vir2 = Math.round(mr2 / 0.80 / 10000) * 10000;
-          if (vir2 < virDOPMin) vir2 = virDOPMin;
-          if (vir2 < prDOP) {
-            var isi2min = Math.round(vir2 * 0.20 / 10000) * 10000;
-            var isi2 = Math.min(iniDOP, vir2 * 0.80);
-            if (isi2 < isi2min) isi2 = isi2min;
-            mr2 = Math.max(0, vir2 - isi2);
-            var e2t = scoreFn(mr2, isi2, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres);
-            if (e2t.sc > e2.sc) {
-              mrDOP = mr2; virDOP = vir2; isiDOP = isi2; e2 = e2t;
-            }
-          }
-        }
-      }
-      ri++;
+    // Probar precios desde 95% hasta 30% del precio E1, en pasos de 5%.
+    // Siempre usar el mismo inicial disponible del cliente (iniDOP).
+    // Detenerse en el primer precio (el más alto) que alcance 80%+.
+    for (var pct = 0.95; pct >= 0.30; pct = Math.round((pct - 0.05) * 100) / 100) {
+      var vir2 = Math.round(vinmDOP * pct / 10000) * 10000;
+      if (vir2 < virDOPMin) vir2 = virDOPMin;
+      if (vir2 >= vinmDOP) continue;
+      var mr2 = Math.max(0, vir2 - iniDOP);
+      if (mr2 <= 0) break;
+      var e2t = scoreFn(mr2, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres);
+      if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = iniDOP; e2 = e2t; }
+      if (e2.sc >= 80) break;
     }
   }
 
-  var e2Reached = e2.sc >= 85;
+var e2Reached = e2.sc >= 85;
   var why = buildWhy(e1, antCred, tuvoPres, activos, pais, edad);
   var sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activos);
   var cp = credPerfil(e1.pExpTit, e1.pAt, antCred, tuvoPres);
@@ -681,7 +660,7 @@ function buildWhy(e, antCred, tuvoPres, activos, pais, edad) {
 
   if (e.pD >= 85) w.push({ t: 'ok', x: 'Excelente capacidad de endeudamiento', s: 'El porcentaje de tus ingresos que va a deudas es ' + Math.round(e.dti * 100) + '%. Esta dentro del rango ideal (menos del 33%).' });
   else if (e.pD >= 72) w.push({ t: 'ok', x: 'Buena capacidad de endeudamiento', s: 'El porcentaje de endeudamiento es ' + Math.round(e.dti * 100) + '%. Dentro del rango aceptable (33-40%). Hay margen con buen perfil general.' });
-  else if (e.pD >= 45) w.push({ t: 'w', x: 'Capacidad de endeudamiento ajustada', s: 'El porcentaje de endeudamiento es ' + Math.round(e.dti * 100) + '%. Supera el 40% maximo aceptado. Reducir deudas mejoraria tu perfil.' });
+  else if (e.pD >= 45) w.push({ t: 'w', x: 'Capacidad de endeudamiento ajustada', s: 'El porcentaje de endeudamiento es ' + Math.round(e.dti * 100) + '%. Supera el 40% maximo aceptado. Reducir deudas mejoraría tu perfil.' });
   else w.push({ t: 'b', x: 'Capacidad de endeudamiento insuficiente', s: 'El porcentaje de endeudamiento es ' + Math.round(e.dti * 100) + '%. Muy por encima del limite. Es el principal obstaculo.' });
 
   if (!tuvoPres) {
@@ -706,15 +685,15 @@ function buildWhy(e, antCred, tuvoPres, activos, pais, edad) {
 
   if (e.pL >= 88) w.push({ t: 'ok', x: 'Inicial muy favorable', s: 'Tu inicial representa el ' + Math.round(100 - e.ltv * 100) + '% del valor. Reduce el riesgo del banco.' });
   else if (e.pL >= 70) w.push({ t: 'ok', x: 'Inicial adecuada', s: 'Tu inicial cubre el ' + Math.round(100 - e.ltv * 100) + '% del valor. Dentro del rango preferido.' });
-  else if (e.pL >= 42) w.push({ t: 'w', x: 'Inicial en el limite minimo', s: 'Tu inicial cubre el ' + Math.round(100 - e.ltv * 100) + '% del valor. Aumentarla mejoraria directamente tu probabilidad y reduciria la cuota mensual.' });
+  else if (e.pL >= 42) w.push({ t: 'w', x: 'Inicial en el limite minimo', s: 'Tu inicial cubre el ' + Math.round(100 - e.ltv * 100) + '% del valor. Aumentarla mejoraría directamente tu probabilidad y reduciría la cuota mensual.' });
   else w.push({ t: 'b', x: 'Inicial insuficiente', s: 'Tu inicial cubre solo el ' + Math.round(100 - e.ltv * 100) + '% del valor. La mayoria de entidades requieren al menos el 20%.' });
 
   if (e.pEs >= 80) w.push({ t: 'ok', x: 'Estabilidad laboral comprobable', s: 'Tu tipo de empleo y antiguedad generan confianza en los evaluadores.' });
-  else if (e.pEs >= 55) w.push({ t: 'w', x: 'Estabilidad laboral aceptable', s: 'Mas de 2 anos en el mismo empleo mejoraria tu evaluacion.' });
+  else if (e.pEs >= 55) w.push({ t: 'w', x: 'Estabilidad laboral aceptable', s: 'Mas de 2 años en el mismo empleo mejoraría tu evaluación.' });
   else w.push({ t: 'b', x: 'Estabilidad laboral limitada', s: 'Menos de 1 ano en el empleo actual es un factor limitante para varias entidades.' });
 
   if (e.pI >= 87) w.push({ t: 'ok', x: 'Nivel de ingresos alto', s: 'Tu ingreso mensual neto esta entre los mas favorables para calificar a montos hipotecarios mayores.' });
-  else if (e.pI >= 50) w.push({ t: 'w', x: 'Nivel de ingresos moderado', s: 'Tu ingreso cubre el perfil estandar. Un ingreso mayor mejoraria tu probabilidad.' });
+  else if (e.pI >= 50) w.push({ t: 'w', x: 'Nivel de ingresos moderado', s: 'Tu ingreso cubre el perfil estandar. Un ingreso mayor mejoraría tu probabilidad.' });
   else w.push({ t: 'b', x: 'Nivel de ingresos limitado', s: 'Tu ingreso mensual neto esta por debajo del rango mas favorable para el monto solicitado.' });
 
   // Pais de residencia y edad no se muestran aqui: son factores de ponderacion
@@ -833,7 +812,7 @@ function render() {
   var bo1 = document.getElementById('btn-ofertas-e1');
   if (bo1) {
     if (e1.sc >= 70) {
-      bo1.textContent = '🏠 Quiero recibir ofertas dentro de mi mejor probabilidad de aprobacion';
+      bo1.textContent = '🏠 Quiero recibir ofertas dentro de mi mejor probabilidad de aprobación';
       bo1.style.background = '';
       bo1.style.boxShadow = '';
     } else {
@@ -907,7 +886,7 @@ function render() {
       var e2msg = document.getElementById('m2');
       if (e2msg) {
         var msgE2 = '';
-        if (e2.sc >= 85) msgE2 = 'Con esta propiedad tu probabilidad es alta. Es una opcion realista hoy.';
+        if (e2.sc >= 85) msgE2 = 'Con esta propiedad tu probabilidad es alta. Es una opción realista hoy.';
         else if (e2.sc >= 70) msgE2 = 'Esta propiedad mejora tus posibilidades respecto al Escenario 1.';
         else msgE2 = 'Esta propiedad mejora tu probabilidad, aunque aun no es la ideal.';
         e2msg.textContent = msgE2;
@@ -927,7 +906,7 @@ function render() {
 
         var cdBtn = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar un co-deudor para complementar tu experiencia crediticia</button>' : '';
 
-        aBox.innerHTML = '<div class="asesor-box"><h4>Tu mejor escenario con el perfil actual</h4><p>Basado en tu informacion, esta es la propiedad con mayor probabilidad hoy. Para alcanzar una probabilidad mas alta, estas acciones concretas marcarian la diferencia:</p><ul class="asesor-actions">' + fHTML + '</ul>' + cdBtn + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a preparar tu perfil</button></div>';
+        aBox.innerHTML = '<div class="asesor-box"><h4>Tu mejor opción con el inicial que tienes disponible</h4><p>Basado en tu información, esta es la propiedad con mayor probabilidad con el inicial disponible. Para alcanzar una probabilidad más alta, estas acciones concretas marcarían la diferencia:</p><ul class="asesor-actions">' + fHTML + '</ul>' + cdBtn + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a preparar tu perfil</button></div>';
 
         aBox.style.display = 'block';
       } else {
@@ -948,7 +927,7 @@ function render() {
   if (lt && lm) {
     if (e1.sc >= 80) {
       lt.textContent = 'Estas listo para aplicar!';
-      lm.textContent = 'Tu perfil tiene alta probabilidad de aprobacion. Un asesor te contacta hoy para guiarte en el proceso.';
+      lm.textContent = 'Tu perfil tiene alta probabilidad de aprobación. Un asesor te contacta hoy para guiarte en el proceso.';
     } else if (e1.sc >= 70) {
       lt.textContent = 'Un asesor te ayuda a cerrar la brecha';
       lm.textContent = 'Tu perfil es aceptable. Con algunos ajustes puedes mejorar significativamente tu probabilidad.';
