@@ -594,8 +594,7 @@ function calc() {
 
   var e1 = scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres);
 
-  // E2 - solo si E1 < 80%: mantiene el inicial real del cliente y busca el precio
-  // de venta más alto posible, menor que el E1, donde la probabilidad llega a 80%+.
+  // E2 - solo si E1 < 80%
   var tm = TM();
   var activosDOP = activos * rIn;
   var ingEffTotal = ingTot + activosDOP;
@@ -603,15 +602,12 @@ function calc() {
 
   var precioMinE2Usd = (REMOTE_PARAMS && REMOTE_PARAMS.fin && REMOTE_PARAMS.fin.precioMinE2Usd != null) ? REMOTE_PARAMS.fin.precioMinE2Usd : 40000;
   var virDOPMin = Math.round(precioMinE2Usd * TC / 10000) * 10000;
-  var e2NoViable = virDOPMin >= vinmDOP; // no hay precio menor posible al minimo
+  var e2NoViable = virDOPMin >= prDOP; // no hay espacio entre el minimo y el precio original
 
+  // PASO 1: intentar con el inicial real del cliente, buscando precio menor donde llegue a 80%+
   var e2 = { sc: 0, cDOP: 0 };
   var mrDOP = 0, virDOP = 0, isiDOP = iniDOP;
-
   if (!e2NoViable) {
-    // Probar precios desde 95% hasta 30% del precio E1, en pasos de 5%.
-    // Siempre usar el mismo inicial disponible del cliente (iniDOP).
-    // Detenerse en el primer precio (el más alto) que alcance 80%+.
     for (var pct = 0.95; pct >= 0.30; pct = Math.round((pct - 0.05) * 100) / 100) {
       var vir2 = Math.round(vinmDOP * pct / 10000) * 10000;
       if (vir2 < virDOPMin) vir2 = virDOPMin;
@@ -621,6 +617,47 @@ function calc() {
       var e2t = scoreFn(mr2, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres);
       if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = iniDOP; e2 = e2t; }
       if (e2.sc >= 80) break;
+    }
+  }
+
+  // PASO 2: si con el inicial real no se alcanzó 80%, usar lógica original (ajusta el inicial)
+  if (e2.sc < 80) {
+    var cmaxHip = Math.max(0, ingEffTotal * 0.33 - deuExist);
+    mrDOP = cmaxHip > 0 ? Math.round((cmaxHip * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000 : 0;
+    if (mrDOP >= prDOP) mrDOP = Math.max(0, prDOP - 100000);
+
+    virDOP = mrDOP > 0 ? Math.round(mrDOP / 0.80 / 10000) * 10000 : 0;
+    if (virDOP > 0 && virDOP < virDOPMin) virDOP = virDOPMin;
+    var isiMin = virDOP > 0 ? Math.round(virDOP * 0.20 / 10000) * 10000 : 0;
+    isiDOP = Math.min(iniDOP, virDOP > 0 ? virDOP * 0.80 : 0);
+    if (isiDOP < isiMin) isiDOP = isiMin;
+    if (virDOP > 0) mrDOP = Math.max(0, virDOP - isiDOP);
+
+    e2 = (!e2NoViable && mrDOP > 0) ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres) : { sc: 0, cDOP: 0 };
+
+    if (!e2NoViable) {
+      var ratios = [0.30, 0.28, 0.25], ri = 0;
+      while (e2.sc < 85 && ri < ratios.length) {
+        var cap2 = ingEffTotal * ratios[ri] - deuExist;
+        if (cap2 > 0) {
+          var mr2 = Math.round((Math.max(0, cap2) * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000;
+          if (mr2 > 0 && mr2 < prDOP) {
+            var vir2 = Math.round(mr2 / 0.80 / 10000) * 10000;
+            if (vir2 < virDOPMin) vir2 = virDOPMin;
+            if (vir2 < prDOP) {
+              var isi2min = Math.round(vir2 * 0.20 / 10000) * 10000;
+              var isi2 = Math.min(iniDOP, vir2 * 0.80);
+              if (isi2 < isi2min) isi2 = isi2min;
+              mr2 = Math.max(0, vir2 - isi2);
+              var e2t = scoreFn(mr2, isi2, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres);
+              if (e2t.sc > e2.sc) {
+                mrDOP = mr2; virDOP = vir2; isiDOP = isi2; e2 = e2t;
+              }
+            }
+          }
+        }
+        ri++;
+      }
     }
   }
 
