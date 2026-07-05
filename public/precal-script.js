@@ -1001,6 +1001,57 @@ function render() {
       ssc();
     }
   }, 150);
+
+  if (e1.sc >= 70) {
+    setTimeout(function () { showLeadPopup(e1.sc, false); }, 2500);
+  } else if (showE2 && SD.e2 && SD.e2.sc >= 80) {
+    setTimeout(function () { showLeadPopup(SD.e2.sc, true); }, 2500);
+  }
+}
+
+function closeLeadPopup() {
+  var p = document.getElementById('lead-popup');
+  if (p) p.style.display = 'none';
+}
+
+function showLeadPopup(sc, isE2) {
+  var color, badge, title, sub, body;
+  if (sc >= 90) {
+    color = '#059669';
+    badge = '★ Muy Alta Probabilidad';
+    title = isE2 ? '¡Encontramos una propiedad con excelente probabilidad para ti!' : '¡Tu perfil es excelente! Estás listo para aplicar';
+    sub = isE2 ? 'Con una propiedad ajustada a tu perfil' : 'Perfil excelente. Las puertas están abiertas';
+    body = isE2 ? 'Identificamos una opción de propiedad donde tu probabilidad de aprobación es excelente. Un asesor te muestra los detalles.' : 'Con este resultado las entidades financieras verán tu expediente con muy buenos ojos. ¡No pierdas esta oportunidad!';
+  } else if (sc >= 80) {
+    color = '#0F766E';
+    badge = 'Alta Probabilidad';
+    title = isE2 ? 'Encontramos una opción con alta probabilidad de aprobación' : 'Tu perfil tiene alta probabilidad de aprobación';
+    sub = isE2 ? 'Con una propiedad ajustada a tu perfil' : 'Las posibilidades son muy altas';
+    body = isE2 ? 'Hay una propiedad donde tu perfil clasifica con alta probabilidad. Nuestros asesores te acompañan desde el primer paso.' : 'Muy buen perfil. Estás en una posición sólida para iniciar el proceso. Nuestros asesores te acompañarán desde el inicio hasta el cierre.';
+  } else {
+    color = '#0E7490';
+    badge = 'Probabilidad Moderada';
+    title = 'Tu perfil puede clasificar para financiamiento';
+    sub = 'Varias entidades podrían aprobarte hoy';
+    body = 'Con este perfil ya puedes explorar opciones reales. Un asesor puede ayudarte a presentarte ante la entidad correcta y aumentar tus probabilidades.';
+  }
+
+  var p = document.getElementById('lead-popup');
+  var head = document.getElementById('lead-popup-head');
+  var circle = document.getElementById('lead-popup-circle');
+  var cta = document.getElementById('lead-popup-cta');
+  if (!p) return;
+
+  document.getElementById('lead-popup-badge').textContent = badge;
+  document.getElementById('lead-popup-title').textContent = title;
+  document.getElementById('lead-popup-score').textContent = sc;
+  document.getElementById('lead-popup-sub').textContent = sub;
+  document.getElementById('lead-popup-body').textContent = body;
+  head.style.background = color;
+  circle.style.border = '3px solid rgba(255,255,255,0.5)';
+  cta.style.background = color;
+
+  p.style.display = 'flex';
 }
 
 function irCd() {
