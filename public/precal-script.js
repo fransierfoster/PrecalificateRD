@@ -376,6 +376,21 @@ function chk(s) {
     }
   }
 
+  // Validar co-deudor si está activado (paso 3)
+  if (s === 3 && document.getElementById('cdtog').checked) {
+    var cdiEl = document.getElementById('cdi');
+    var cdiVal = cdiEl ? pn('cdi') : 0;
+    if (!cdiVal) {
+      if (cdiEl) { cdiEl.style.borderColor = 'var(--red)'; cdiEl.style.boxShadow = '0 0 0 3px rgba(192,22,28,.12)'; }
+      ok = false;
+    }
+    if (CDATVAL === null) {
+      var cdatnoEl = document.getElementById('cdatno');
+      if (cdatnoEl) { cdatnoEl.style.outline = '2px solid var(--red)'; setTimeout(function(){ cdatnoEl.style.outline=''; }, 2500); }
+      ok = false;
+    }
+  }
+
   // Validaciones de precio mínimo e inicial mínimo (solo paso 3)
   if (s === 3) {
     var mp3 = document.getElementById('mprecio').value;
@@ -1359,9 +1374,10 @@ function loadForm() {
 
     var d = JSON.parse(raw);
 
+    var zeroAllowed = ['deu', 'cdd', 'activos'];
     var set = function (id, val) {
       var el = document.getElementById(id);
-      if (el && val) el.value = val;
+      if (el && (val || zeroAllowed.indexOf(id) >= 0)) el.value = val || '';
     };
 
     set('edad', d.edad);

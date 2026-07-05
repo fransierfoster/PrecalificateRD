@@ -12,7 +12,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .ttrack::before{content:'';width:18px;height:18px;border-radius:50%;background:#FFF;flex-shrink:0;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.3);}
 .tswitch input:checked+.ttrack{background:var(--red);}
 .tswitch input:checked+.ttrack::before{transform:translateX(24px);}
-header{background:var(--blk);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+header{background:var(--blk);padding:14px 22px;padding-top:max(14px,calc(env(safe-area-inset-top) + 6px));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .logo{display:flex;align-items:center;gap:11px;text-decoration:none;}
 .logo img{width:44px;height:44px;object-fit:contain;border-radius:6px;}
 .logo-full img{width:auto;height:46px;border-radius:0;display:block;}
@@ -61,7 +61,7 @@ body.dark .hn{background:rgba(240,165,0,.06);}
 .fl label{font-size:12px;font-weight:600;color:var(--tx);}
 .tb{width:16px;height:16px;border-radius:50%;background:var(--su2);border:1.5px solid var(--bdr);color:var(--tx2);font-size:9px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;transition:background .15s;}
 .tb:hover,.tb:focus{background:var(--red);color:#FFF;border-color:var(--red);}
-.tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#111;color:#FFF;font-size:11px;line-height:1.6;padding:10px 13px;border-radius:10px;width:220px;z-index:300;box-shadow:0 4px 20px rgba(0,0,0,.4);pointer-events:none;font-weight:400;}
+.tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#111;color:#FFF;font-size:11px;line-height:1.6;padding:10px 13px;border-radius:10px;width:220px;max-width:calc(100vw - 32px);z-index:300;box-shadow:0 4px 20px rgba(0,0,0,.4);pointer-events:none;font-weight:400;}
 .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#111;}
 .tb:hover .tip,.tb:focus .tip{display:block;}
 input,select{width:100%;padding:11px 13px;border:1.5px solid var(--bdr);border-radius:11px;font-family:'Inter',sans-serif;font-size:14px;color:var(--tx);background:var(--sur);outline:none;appearance:none;-webkit-appearance:none;transition:border-color .2s,box-shadow .2s;cursor:pointer;}
