@@ -478,7 +478,8 @@ function scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, 
   if (tieneCD) {
     if (atrawCD === 0) pAtCD = 100;
     else if (atrawCD === 30) pAtCD = 68;
-    else pAtCD = atpatCD === 'unico' ? 28 : 3;
+    else if (atrawCD === 45) pAtCD = atpatCD === 'unico' ? 29 : 13;
+    else pAtCD = atpatCD === 'unico' ? 18 : 9;
   }
   var pAtFinal = tieneCD ? (pAt * 0.60 + pAtCD * 0.40) : pAt;
 
@@ -1100,7 +1101,7 @@ function irLead() {
 function renderResumen() {
   var empMap = { formal: 'Empleado formal', independiente: 'Independiente', empresario: 'Empresario', remesa: 'Diaspora', pension: 'Pensionado' };
   var antMap = { menos1: 'Menos de 1 ano', '1a2': '1-2 anos', '2a5': '2-5 anos', mas5: 'Mas de 5 anos' };
-  var atMap = { 0: 'Sin atrasos', 30: 'Atraso leve (<30 dias)', 60: 'Atraso mayor (>30 dias)' };
+  var atMap = { 0: 'Sin atrasos', 30: 'Atraso leve (<30 dias)', 45: 'Atraso moderado (31-60 dias)', 90: 'Atraso grave (>60 dias)' };
 
   var rIn = SD.rIn || 1;
 
@@ -1128,7 +1129,7 @@ function renderResumen() {
     if (SD.tieneCD) {
       var empMapCD = { formal: 'Empleado formal', independiente: 'Independiente', empresario: 'Empresario', remesa: 'Diaspora', pension: 'Pensionado' };
       var antMapCD = { menos1: 'Menos de 1 ano', '1a2': '1-2 anos', '2a5': '2-5 anos', mas5: 'Mas de 5 anos' };
-      var atMapCD = { 0: 'Sin atrasos', 30: 'Atraso leve (<30d)', 60: 'Atraso mayor (>30d)' };
+      var atMapCD = { 0: 'Sin atrasos', 30: 'Atraso leve (<30d)', 45: 'Atraso moderado (31-60d)', 90: 'Atraso grave (>60d)' };
 
       var cdItems = [
         { l: 'Ingreso mensual', v: fmt(SD.ingCDDOP) + '/mes' },
