@@ -244,7 +244,7 @@ footer strong{color:var(--red);}
 .btn-ofertas-e2:hover{box-shadow:0 6px 20px rgba(29,58,138,.4);}
 @media(max-width:480px){.r2,.dr,.fstrip,.slgrid,.sum-grid,.prod-grid{grid-template-columns:1fr;}.hero{padding:34px 14px 50px;}.sc{padding:18px 13px;}.mrs{flex-direction:column;}}
 
-.fab-wrap{position:fixed;bottom:24px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:200;}
+.fab-wrap{position:fixed;bottom:max(24px,calc(env(safe-area-inset-bottom) + 8px));right:20px;display:flex;flex-direction:column;gap:10px;z-index:200;}
 .fab{width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:transform .2s,box-shadow .2s;text-decoration:none;}
 .fab:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
 .fab-wa{background:#25D366;}

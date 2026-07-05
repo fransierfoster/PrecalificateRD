@@ -5,7 +5,7 @@ const DC = ['US','PR','CA','PA','EC','SV','BS','BB','AG','GD','KN','LC','VC','TT
 var SNMS = ['', 'Perfil Personal', 'Situación Financiera', 'Inmueble y Capital'];
 
 let SD = {};
-var MR = 'DOP', TOK = false, COK = false, PRESVAL = null, ATVAL = null, CDATVAL = null;
+var MR = 'DOP', TOK = false, COK = false, PRESVAL = null, ATVAL = null, CDATVAL = null, _popupTimer = null;
 
 // ── SUPABASE ──
 var SUPA_URL = (typeof window !== 'undefined' && window.__SUPA_URL__) || '';
@@ -136,7 +136,11 @@ function setAt(v) {
   document.getElementById('atno').className = 'ynb' + (v === 'no' ? ' ano' : '');
   document.getElementById('atsi').className = 'ynb' + (v === 'si' ? ' asi' : '');
   document.getElementById('atd').classList.toggle('vis', v === 'si');
-  if (v === 'no') document.getElementById('attyp').value = '';
+  if (v === 'no') {
+    document.getElementById('attyp').value = '';
+    var atpatWrap = document.getElementById('atpat-wrap');
+    if (atpatWrap) atpatWrap.style.display = 'none';
+  }
 }
 
 function setCDAt(v) {
@@ -144,7 +148,11 @@ function setCDAt(v) {
   document.getElementById('cdatno').className = 'ynb' + (v === 'no' ? ' ano' : '');
   document.getElementById('cdatsi').className = 'ynb' + (v === 'si' ? ' asi' : '');
   document.getElementById('cdatd').classList.toggle('vis', v === 'si');
-  if (v === 'no') document.getElementById('cdattyp').value = '';
+  if (v === 'no') {
+    document.getElementById('cdattyp').value = '';
+    var cdatpatWrap = document.getElementById('cdatpat-wrap');
+    if (cdatpatWrap) cdatpatWrap.style.display = 'none';
+  }
 }
 
 // ── MONEDA ──
@@ -556,6 +564,8 @@ function anim(rid, pid, sc, col) {
 function calc() {
   if (!TOK) { openM(); return; }
   if (!chk(3)) return;
+  var bcalc = document.getElementById('bcalc');
+  if (bcalc) bcalc.disabled = true;
 
   var edad = parseFloat(document.getElementById('edad').value) || 0;
   var pais = document.getElementById('pais').value;
@@ -1010,8 +1020,6 @@ function render() {
   }
 }
 
-var _popupTimer = null;
-
 function closeLeadPopup() {
   var p = document.getElementById('lead-popup');
   if (p) p.style.display = 'none';
@@ -1067,6 +1075,7 @@ function irCd() {
 
 function irLead() {
   var el = document.getElementById('lead-title') || document.getElementById('lcard');
+  if (!el) return;
   var header = document.querySelector('header');
   var headerH = header ? header.getBoundingClientRect().height : 0;
   var targetY = window.pageYOffset + el.getBoundingClientRect().top - headerH - 12;
