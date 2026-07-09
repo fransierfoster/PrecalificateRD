@@ -624,3 +624,14 @@
 .adm-btn-secondary:hover {
   background: #CBD5E1;
 }
+
+.adm-filter-count {
+  font-size: 13px;
+  color: #64748B;
+  margin-bottom: 10px;
+}
+
+.adm-filter-count strong {
+  color: var(--blk);
+  font-weight: 700;
+}

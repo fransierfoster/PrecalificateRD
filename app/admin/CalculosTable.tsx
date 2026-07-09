@@ -203,6 +203,10 @@ export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
         </div>
       </div>
 
+      <div className="adm-filter-count">
+        Mostrando <strong>{filtered.length}</strong> de {calculos.length} cálculos
+      </div>
+
       <div className="adm-table-wrap">
         <table className="adm-table">
           <thead>
