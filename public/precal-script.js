@@ -1599,12 +1599,7 @@ function togOfertas() {
 function applyUIParams() {
   if (!REMOTE_PARAMS || !REMOTE_PARAMS.ui) return;
 
-  // Contador de consultas: ocultar todo el bloque si está desactivado
-  var contEl = document.getElementById('contador-consultas');
-  if (contEl) {
-    var contBlk = contEl.parentElement;
-    if (contBlk) contBlk.style.display = REMOTE_PARAMS.ui.contadorVisible ? '' : 'none';
-  }
+  // Contador de asesorías solicitadas: ocultar todo el bloque si está desactivado
   var solEl = document.getElementById('contador-solicitudes');
   if (solEl) {
     var solBlk = solEl.parentElement;

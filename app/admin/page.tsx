@@ -189,8 +189,8 @@ export default async function AdminPage() {
             <ToggleParamForm
               clave={uiContador.clave}
               valor={uiContador.valor}
-              label="Contador de consultas realizadas"
-              description="Número visible en la página principal que muestra el total de cálculos realizados"
+              label="Contador de asesorías solicitadas"
+              description="Número visible en la página principal que muestra el total de personas que pidieron asesoría"
             />
           )}
         </div>
