@@ -60,15 +60,37 @@ function csvEscape(value: string) {
 
 export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
   const [scoreMin, setScoreMin] = useState('');
+  const [scoreMax, setScoreMax] = useState('');
+  const [e2Min, setE2Min] = useState('');
+  const [e2Max, setE2Max] = useState('');
   const [tipo, setTipo] = useState('todos');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   const filtered = useMemo(() => {
     return calculos.filter((c) => {
       if (scoreMin !== '' && (c.score_e1 == null || c.score_e1 < Number(scoreMin))) return false;
+      if (scoreMax !== '' && (c.score_e1 == null || c.score_e1 > Number(scoreMax))) return false;
+      if (e2Min !== '' && (c.score_e2 == null || c.score_e2 < Number(e2Min))) return false;
+      if (e2Max !== '' && (c.score_e2 == null || c.score_e2 > Number(e2Max))) return false;
       if (tipo !== 'todos' && c.tipo !== tipo) return false;
+      if (fechaDesde !== '') {
+        const desde = new Date(fechaDesde);
+        if (new Date(c.created_at) < desde) return false;
+      }
+      if (fechaHasta !== '') {
+        const hasta = new Date(fechaHasta);
+        hasta.setHours(23, 59, 59, 999);
+        if (new Date(c.created_at) > hasta) return false;
+      }
       return true;
     });
-  }, [calculos, scoreMin, tipo]);
+  }, [calculos, scoreMin, scoreMax, e2Min, e2Max, tipo, fechaDesde, fechaHasta]);
+
+  function clearFilters() {
+    setScoreMin(''); setScoreMax(''); setE2Min(''); setE2Max('');
+    setTipo('todos'); setFechaDesde(''); setFechaHasta('');
+  }
 
   function exportCSV() {
     const headers = [
@@ -127,21 +149,58 @@ export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
   return (
     <div>
       <div className="adm-filters">
-        <label className="adm-filter">
-          Score E1 mín. (%)
-          <input type="number" className="adm-input" value={scoreMin} onChange={(e) => setScoreMin(e.target.value)} min={0} max={100} />
-        </label>
-        <label className="adm-filter">
-          Tipo
-          <select className="adm-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-            <option value="todos">Todos</option>
-            <option value="e1">Escenario 1</option>
-            <option value="e2">Escenario 2</option>
-          </select>
-        </label>
-        <button type="button" className="adm-btn adm-btn-primary adm-export-btn" onClick={exportCSV}>
-          Exportar a Excel ({filtered.length})
-        </button>
+        <div className="adm-filter-group">
+          <span className="adm-filter-group-label">Fecha</span>
+          <label className="adm-filter">
+            Desde
+            <input type="date" className="adm-input" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+          </label>
+          <label className="adm-filter">
+            Hasta
+            <input type="date" className="adm-input" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+          </label>
+        </div>
+        <div className="adm-filter-group">
+          <span className="adm-filter-group-label">Score E1 (%)</span>
+          <label className="adm-filter">
+            Mín.
+            <input type="number" className="adm-input adm-input-sm" value={scoreMin} onChange={(e) => setScoreMin(e.target.value)} min={0} max={100} placeholder="0" />
+          </label>
+          <label className="adm-filter">
+            Máx.
+            <input type="number" className="adm-input adm-input-sm" value={scoreMax} onChange={(e) => setScoreMax(e.target.value)} min={0} max={100} placeholder="100" />
+          </label>
+        </div>
+        <div className="adm-filter-group">
+          <span className="adm-filter-group-label">Score E2 (%)</span>
+          <label className="adm-filter">
+            Mín.
+            <input type="number" className="adm-input adm-input-sm" value={e2Min} onChange={(e) => setE2Min(e.target.value)} min={0} max={100} placeholder="0" />
+          </label>
+          <label className="adm-filter">
+            Máx.
+            <input type="number" className="adm-input adm-input-sm" value={e2Max} onChange={(e) => setE2Max(e.target.value)} min={0} max={100} placeholder="100" />
+          </label>
+        </div>
+        <div className="adm-filter-group">
+          <span className="adm-filter-group-label">Tipo</span>
+          <label className="adm-filter">
+            &nbsp;
+            <select className="adm-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
+              <option value="todos">Todos</option>
+              <option value="e1">Solo E1</option>
+              <option value="e2">Con E2</option>
+            </select>
+          </label>
+        </div>
+        <div className="adm-filter-actions">
+          <button type="button" className="adm-btn adm-btn-secondary" onClick={clearFilters}>
+            Limpiar
+          </button>
+          <button type="button" className="adm-btn adm-btn-primary" onClick={exportCSV}>
+            Exportar CSV ({filtered.length})
+          </button>
+        </div>
       </div>
 
       <div className="adm-table-wrap">

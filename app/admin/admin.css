@@ -557,3 +557,70 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* --- Filter groups --- */
+.adm-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: flex-end;
+}
+
+.adm-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 12px 10px;
+}
+
+.adm-filter-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94A3B8;
+  display: flex;
+  gap: 8px;
+}
+
+.adm-filter-group .adm-filter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.adm-filter-group .adm-filter .adm-input {
+  width: 80px;
+}
+
+.adm-filter-group .adm-filter .adm-input[type="date"] {
+  width: 130px;
+}
+
+.adm-filter-group .adm-filter .adm-input:not([type="number"]):not([type="date"]) {
+  width: 120px;
+}
+
+.adm-filter-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.adm-btn-secondary {
+  background: #E2E8F0;
+  color: #475569;
+}
+
+.adm-btn-secondary:hover {
+  background: #CBD5E1;
+}
