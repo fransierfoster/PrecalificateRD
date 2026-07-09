@@ -1042,6 +1042,7 @@ function closeLeadPopup() {
 }
 
 function showLeadPopup(sc, isE2) {
+  if (REMOTE_PARAMS && REMOTE_PARAMS.ui && !REMOTE_PARAMS.ui.popupActivo) return;
   var color, badge, title, sub, body;
   if (sc >= 90) {
     color = '#059669';
@@ -1594,6 +1595,23 @@ function togOfertas() {
   document.getElementById('ofertasck').classList.toggle('on', QUIERE_OFERTAS);
 }
 
+// -- CONFIGURACION UI DESDE PARAMETROS --
+function applyUIParams() {
+  if (!REMOTE_PARAMS || !REMOTE_PARAMS.ui) return;
+
+  // Contador de consultas: ocultar todo el bloque si está desactivado
+  var contEl = document.getElementById('contador-consultas');
+  if (contEl) {
+    var contBlk = contEl.parentElement;
+    if (contBlk) contBlk.style.display = REMOTE_PARAMS.ui.contadorVisible ? '' : 'none';
+  }
+  var solEl = document.getElementById('contador-solicitudes');
+  if (solEl) {
+    var solBlk = solEl.parentElement;
+    if (solBlk) solBlk.style.display = REMOTE_PARAMS.ui.contadorVisible ? '' : 'none';
+  }
+}
+
 // -- PARAMETROS REMOTOS DESDE SUPABASE --
 var PARAMS_LOADED = false;
 var REMOTE_PARAMS = null;
@@ -1653,10 +1671,13 @@ function loadRemoteParams() {
       pais: { DO: m.pais_do, US: m.pais_us, PR: m.pais_pr, CA: m.pais_ca, ES: m.pais_es, otro: m.pais_otro },
       act: { noDeclara: m.act_no_declara, menos10: m.act_menos10, r10_30: m.act_10_30, mas30: m.act_mas30 },
       edad: { e18_24: m.edad_18_24, e25_45: m.edad_25_45, e46_55: m.edad_46_55, e56_60: m.edad_56_60, mas60: m.edad_mas60 },
-      fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio, precioMinE2Usd: m.fin_precio_min_e2_usd }
+      fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio, precioMinE2Usd: m.fin_precio_min_e2_usd },
+      ui: { popupActivo: m.ui_popup_activo !== 0, contadorVisible: m.ui_contador_visible !== 0 }
     };
 
     PARAMS_LOADED = true;
+
+    applyUIParams();
 
     if (REMOTE_PARAMS.fin) {
       TDOP = REMOTE_PARAMS.fin.tasaDOP / 12;

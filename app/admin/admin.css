@@ -478,3 +478,82 @@
   font-size: 13px;
   margin: -4px 0 12px;
 }
+
+/* --- UI Toggle switches --- */
+.adm-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.adm-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+}
+
+.adm-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.adm-toggle-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blk);
+}
+
+.adm-toggle-desc {
+  font-size: 12px;
+  color: #64748B;
+  line-height: 1.4;
+}
+
+.adm-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.adm-toggle-btn {
+  border: none;
+  border-radius: 20px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  min-width: 90px;
+}
+
+.adm-toggle-on {
+  background: #059669;
+  color: #fff;
+}
+
+.adm-toggle-on:hover {
+  background: #047857;
+}
+
+.adm-toggle-off {
+  background: #E2E8F0;
+  color: #64748B;
+}
+
+.adm-toggle-off:hover {
+  background: #CBD5E1;
+}
+
+.adm-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

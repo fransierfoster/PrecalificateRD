@@ -4,6 +4,7 @@ import { signOut } from './actions';
 import LeadsTable, { type Lead } from './LeadsTable';
 import CalculosTable, { type Calculo } from './CalculosTable';
 import ParamForm from './ParamForm';
+import ToggleParamForm from './ToggleParamForm';
 import './admin.css';
 
 type Parametro = {
@@ -149,8 +150,12 @@ export default async function AdminPage() {
   const sumaOk = Math.round(sumaPesos) === 100;
 
   const finParams = groups.fin || [];
+  const uiParams = groups.ui || [];
   const factorKeys = new Set(FACTOR_DEFS.map((f) => f.key));
-  const otrosCats = Object.keys(groups).filter((c) => c !== 'pesos' && c !== 'fin' && !factorKeys.has(c));
+  const otrosCats = Object.keys(groups).filter((c) => c !== 'pesos' && c !== 'fin' && c !== 'ui' && !factorKeys.has(c));
+
+  const uiPopup = uiParams.find((p) => p.clave === 'ui_popup_activo');
+  const uiContador = uiParams.find((p) => p.clave === 'ui_contador_visible');
 
   return (
     <div className="adm-page">
@@ -166,6 +171,28 @@ export default async function AdminPage() {
         <div className="adm-hist-grid">
           <Histogram title="Cálculos por probabilidad" counts={calculosCounts} />
           <Histogram title="Leads por probabilidad" counts={leadsCounts} />
+        </div>
+      </div>
+
+      <div className="adm-card">
+        <h2>Configuración de la interfaz</h2>
+        <div className="adm-toggle-list">
+          {uiPopup && (
+            <ToggleParamForm
+              clave={uiPopup.clave}
+              valor={uiPopup.valor}
+              label="Popup de captación de leads"
+              description="Ventana flotante que aparece 2.5s después del resultado cuando el score ≥ 70%"
+            />
+          )}
+          {uiContador && (
+            <ToggleParamForm
+              clave={uiContador.clave}
+              valor={uiContador.valor}
+              label="Contador de consultas realizadas"
+              description="Número visible en la página principal que muestra el total de cálculos realizados"
+            />
+          )}
         </div>
       </div>
 
