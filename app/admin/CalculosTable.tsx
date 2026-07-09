@@ -75,12 +75,11 @@ export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
       if (e2Max !== '' && (c.score_e2 == null || c.score_e2 > Number(e2Max))) return false;
       if (tipo !== 'todos' && c.tipo !== tipo) return false;
       if (fechaDesde !== '') {
-        const desde = new Date(fechaDesde);
+        const desde = new Date(fechaDesde + 'T00:00:00');
         if (new Date(c.created_at) < desde) return false;
       }
       if (fechaHasta !== '') {
-        const hasta = new Date(fechaHasta);
-        hasta.setHours(23, 59, 59, 999);
+        const hasta = new Date(fechaHasta + 'T23:59:59.999');
         if (new Date(c.created_at) > hasta) return false;
       }
       return true;
