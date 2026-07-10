@@ -73,7 +73,8 @@ export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
       if (scoreMax !== '' && (c.score_e1 == null || c.score_e1 > Number(scoreMax))) return false;
       if (e2Min !== '' && (c.score_e2 == null || c.score_e2 < Number(e2Min))) return false;
       if (e2Max !== '' && (c.score_e2 == null || c.score_e2 > Number(e2Max))) return false;
-      if (tipo !== 'todos' && c.tipo !== tipo) return false;
+      if (tipo === 'solo_e1' && c.score_e2 != null) return false;
+      if (tipo === 'con_e2' && c.score_e2 == null) return false;
       if (fechaDesde !== '') {
         const desde = new Date(fechaDesde + 'T00:00:00');
         if (new Date(c.created_at) < desde) return false;
@@ -187,8 +188,8 @@ export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
             &nbsp;
             <select className="adm-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
               <option value="todos">Todos</option>
-              <option value="e1">Solo E1</option>
-              <option value="e2">Con E2</option>
+              <option value="solo_e1">Solo E1 (sin E2)</option>
+              <option value="con_e2">Con E2</option>
             </select>
           </label>
         </div>

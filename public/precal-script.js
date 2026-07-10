@@ -389,6 +389,16 @@ function chk(s) {
       if (cdatnoEl) { cdatnoEl.style.outline = '2px solid var(--red)'; setTimeout(function(){ cdatnoEl.style.outline=''; }, 2500); }
       ok = false;
     }
+    if (CDATVAL === 'si' && !document.getElementById('cdattyp').value) {
+      var cdattypEl = document.getElementById('cdattyp');
+      if (cdattypEl) { cdattypEl.style.borderColor = 'var(--red)'; cdattypEl.style.boxShadow = '0 0 0 3px rgba(192,22,28,.12)'; }
+      ok = false;
+    }
+    if (CDATVAL === 'si' && document.getElementById('cdattyp').value && parseInt(document.getElementById('cdattyp').value) > 30 && !document.getElementById('cdatpat').value) {
+      var cdatpatEl = document.getElementById('cdatpat');
+      if (cdatpatEl) { cdatpatEl.style.borderColor = 'var(--red)'; cdatpatEl.style.boxShadow = '0 0 0 3px rgba(192,22,28,.12)'; }
+      ok = false;
+    }
   }
 
   // Validaciones de precio mínimo e inicial mínimo (solo paso 3)
@@ -474,13 +484,7 @@ function scoreFn(prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, 
 
   // 2. Historial de pagos — usa parámetros remotos si disponibles
   var pAt = P_MORA_SCORE(atraw, atpat, tuvoPres);
-  var pAtCD = 100;
-  if (tieneCD) {
-    if (atrawCD === 0) pAtCD = 100;
-    else if (atrawCD === 30) pAtCD = 68;
-    else if (atrawCD === 45) pAtCD = atpatCD === 'unico' ? 29 : 13;
-    else pAtCD = atpatCD === 'unico' ? 18 : 9;
-  }
+  var pAtCD = tieneCD ? P_MORA_SCORE(atrawCD, atpatCD, atrawCD > 0) : 100;
   var pAtFinal = tieneCD ? (pAt * 0.60 + pAtCD * 0.40) : pAt;
 
   var moraRec = (tuvoPres && atraw > 30 && atpat !== 'unico');
@@ -1667,7 +1671,7 @@ function loadRemoteParams() {
       act: { noDeclara: m.act_no_declara, menos10: m.act_menos10, r10_30: m.act_10_30, mas30: m.act_mas30 },
       edad: { e18_24: m.edad_18_24, e25_45: m.edad_25_45, e46_55: m.edad_46_55, e56_60: m.edad_56_60, mas60: m.edad_mas60 },
       fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio, precioMinE2Usd: m.fin_precio_min_e2_usd },
-      ui: { popupActivo: m.ui_popup_activo !== 0, contadorVisible: m.ui_contador_visible !== 0 }
+      ui: { popupActivo: m.ui_popup_activo !== 0 && m.ui_popup_activo != null, contadorVisible: m.ui_contador_visible !== 0 && m.ui_contador_visible != null }
     };
 
     PARAMS_LOADED = true;
