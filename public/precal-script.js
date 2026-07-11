@@ -1572,6 +1572,11 @@ function initPrecal() {
     });
   }
 
+  fetch('/api/ui-params').then(function(r) { return r.json(); }).then(function(d) {
+    POPUP_ACTIVO = d.popupActivo !== false;
+    applyUIParams(d.contadorVisible !== false);
+  }).catch(function() {});
+
   setTimeout(loadForm, 300);
   fetchContadorReal();
   fetchSolicitudesReal();
