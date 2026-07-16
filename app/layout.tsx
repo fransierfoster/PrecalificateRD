@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 const SITE_URL = "https://precalificaterd.com";
-const TITLE = "PrecalificateRD — Tu Precalificación Hipotecaria en Minutos";
-const DESCRIPTION = "Simulador hipotecario de Perfect House SRL. Gratuito, sin impacto en tu buró, resultado en minutos.";
+const TITLE = "PrecalificateRD | Tu primer paso hacia la vivienda propia";
+const DESCRIPTION = "Evalúa tu perfil gratis, sin afectar tu historial crediticio y recibe orientación para tomar mejores decisiones.";
 
 export const metadata: Metadata = {
   title: TITLE,
