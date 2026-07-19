@@ -157,6 +157,22 @@ export default async function AdminPage() {
   const uiPopup = uiParams.find((p) => p.clave === 'ui_popup_activo');
   const uiContador = uiParams.find((p) => p.clave === 'ui_contador_visible');
 
+  const { data: eventosFunnel } = await supabase
+    .rpc('contar_eventos_funnel')
+    .returns<{ evento: string; total: number }[]>();
+
+  const funnelMap: Record<string, number> = {};
+  (eventosFunnel || []).forEach((r) => { funnelMap[r.evento] = Number(r.total); });
+
+  const funnelSteps = [
+    { key: 'click_popup_cta', label: 'Clic popup → iniciar proceso' },
+    { key: 'click_asesoria', label: 'Clic → Quiero asesoría / ofertas' },
+    { key: 'click_pdf', label: 'Clic → Descargar Precalificación' },
+    { key: 'form_submit', label: 'Formulario enviado' },
+    { key: 'click_popup_cerrar', label: 'Popup cerrado (Ahora no)' },
+  ];
+  const maxFunnel = Math.max(1, ...funnelSteps.map((s) => funnelMap[s.key] || 0));
+
   return (
     <div className="adm-page">
       <div className="adm-header">
@@ -172,6 +188,26 @@ export default async function AdminPage() {
           <Histogram title="Cálculos por probabilidad" counts={calculosCounts} />
           <Histogram title="Leads por probabilidad" counts={leadsCounts} />
         </div>
+      </div>
+
+      <div className="adm-card">
+        <h2>Embudo de conversión</h2>
+        <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 16px' }}>
+          Clicks en botones vs. formularios completados
+        </p>
+        {funnelSteps.map((step) => {
+          const count = funnelMap[step.key] || 0;
+          const pct = Math.round((count / maxFunnel) * 100);
+          return (
+            <div key={step.key} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <div style={{ width: 220, fontSize: 13, color: '#374151', flexShrink: 0 }}>{step.label}</div>
+              <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 4, height: 20, overflow: 'hidden' }}>
+                <div style={{ width: pct + '%', height: '100%', background: step.key === 'form_submit' ? '#065F46' : step.key === 'click_popup_cerrar' ? '#9CA3AF' : '#C0161C', transition: 'width .3s' }} />
+              </div>
+              <div style={{ width: 36, textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111' }}>{count}</div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="adm-card">

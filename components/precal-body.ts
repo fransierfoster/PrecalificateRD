@@ -134,8 +134,8 @@ export const PRECAL_BODY_HTML = `<div class="thbar"><span class="thlbl" id="thlb
     </div>
     <div style="padding:14px 18px 18px;">
       <p id="lead-popup-body" style="font-size:13px;color:#6B7280;text-align:center;margin-bottom:14px;line-height:1.5;"></p>
-      <button id="lead-popup-cta" onclick="irLead();closeLeadPopup();" style="display:block;width:100%;border:none;border-radius:12px;padding:14px 14px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;line-height:1.35;color:#fff;">Quiero iniciar el proceso de compra de mi propiedad</button>
-      <button onclick="closeLeadPopup()" style="display:block;width:100%;background:none;border:none;margin-top:10px;font-size:12px;color:#9CA3AF;cursor:pointer;">Ahora no, seguir explorando</button>
+      <button id="lead-popup-cta" onclick="trackEvent('click_popup_cta');irLead();closeLeadPopup();" style="display:block;width:100%;border:none;border-radius:12px;padding:14px 14px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;line-height:1.35;color:#fff;">Quiero iniciar el proceso de compra de mi propiedad</button>
+      <button onclick="trackEvent('click_popup_cerrar');closeLeadPopup();" style="display:block;width:100%;background:none;border:none;margin-top:10px;font-size:12px;color:#9CA3AF;cursor:pointer;">Ahora no, seguir explorando</button>
     </div>
   </div>
 </div>

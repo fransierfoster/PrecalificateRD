@@ -869,6 +869,7 @@ function updSl() {
 }
 
 function enviar() {
+  trackEvent('form_submit');
   var n = document.getElementById('lnom').value.trim();
   var t = document.getElementById('ltel').value.trim();
 
@@ -1358,7 +1359,19 @@ function fetchSolicitudesReal() {
 // -- BOTON OFERTAS --
 var QUIERE_OFERTAS = false;
 
+function trackEvent(nombre) {
+  if (!SUPA_URL || !SUPA_KEY) return;
+  var sid = sessionStorage.getItem('precal_sid');
+  if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('precal_sid', sid); }
+  fetch(SUPA_URL + '/rest/v1/precalifica_eventos', {
+    method: 'POST',
+    headers: supaHeaders({ 'Prefer': 'return=minimal' }),
+    body: JSON.stringify({ session_id: sid, evento: nombre })
+  }).catch(function() {});
+}
+
 function solicitarOfertas(escenario) {
+  trackEvent('click_asesoria');
   QUIERE_OFERTAS = true;
   PDF_MODE = false;
   var benvEl = document.getElementById('benv');
@@ -1403,6 +1416,7 @@ function applyUIParams(contadorVisible) {
 var PDF_MODE = false;
 
 function activarModoPDF() {
+  trackEvent('click_pdf');
   PDF_MODE = true;
   var benv = document.getElementById('benv');
   if (benv) benv.textContent = '📄 Descargar mi reporte de evaluación';
