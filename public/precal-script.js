@@ -653,7 +653,8 @@ function calc() {
       tieneCD: tieneCD, ingCDDOP: ingCDDOP, ingDOP: ingDOP,
       expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
       atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
-      e2Reached: res.e2Reached, rIn: rIn, mp: mp, virDOPMin: res.virDOPMin, e2NoViable: res.e2NoViable
+      e2Reached: res.e2Reached, rIn: rIn, mp: mp, virDOPMin: res.virDOPMin, e2NoViable: res.e2NoViable,
+      tinm: document.getElementById('tinm').value
     };
 
     render();
@@ -957,6 +958,14 @@ function render() {
   var fabShare = document.getElementById('fab-share');
   if (fabShare) fabShare.style.display = 'block';
 
+  var pdfSec = document.getElementById('pdf-section');
+  var pdfBtn = document.getElementById('btn-pdf');
+  if (pdfSec) pdfSec.style.display = 'block';
+  if (pdfBtn) {
+    pdfBtn.style.background = b1.k;
+    pdfBtn.style.boxShadow = '0 4px 15px ' + b1.k + '4D';
+  }
+
   document.getElementById('pw').style.display = 'none';
 
   COK = false;
@@ -1163,21 +1172,29 @@ function enviar() {
     return;
   }
 
+  var ape = document.getElementById('lape').value.trim();
+  var emailVal = document.getElementById('lem').value.trim();
+
   var lead = {
     nombre: n,
-    apellido: document.getElementById('lape').value,
+    apellido: ape,
     tel: t,
-    email: document.getElementById('lem').value,
+    email: emailVal,
     docTipo: dt,
     docNum: dn
   };
 
-  sendWebhook('contacto', { quiereOfertas: QUIERE_OFERTAS }, lead);
+  sendWebhook('contacto', { quiereOfertas: QUIERE_OFERTAS, tipo: PDF_MODE ? 'pdf' : 'asesoria' }, lead);
 
   document.getElementById('sr').classList.remove('act');
   document.getElementById('success').classList.add('act');
   ssc();
   actualizarContadorSolicitudes();
+
+  if (PDF_MODE) {
+    var cedTxt = (dt === 'cedula' ? 'Cédula' : 'Pasaporte') + ': ' + dn;
+    generarPDF(n, ape, cedTxt, t, emailVal);
+  }
 }
 
 function reinit() {
@@ -1205,6 +1222,9 @@ function reinit() {
   PRESVAL = null;
   ATVAL = null;
   CDATVAL = null;
+  PDF_MODE = false;
+  var benvR = document.getElementById('benv');
+  if (benvR) benvR.textContent = '✅ Quiero que me contacten';
 
   document.getElementById('tck').classList.remove('on');
   document.getElementById('bcalc').disabled = true;
@@ -1241,6 +1261,8 @@ function reinit() {
 
   setM('DOP');
   SD = {};
+  var pdfSecR = document.getElementById('pdf-section');
+  if (pdfSecR) pdfSecR.style.display = 'none';
   showS(1);
   document.getElementById('pw').style.display = 'block';
   scrollToForm();
@@ -1451,7 +1473,8 @@ function sendWebhook(tipo, data, lead) {
         email: lead.email,
         doc_tipo: lead.docTipo,
         doc_numero: lead.docNum,
-        quiere_ofertas: !!data.quiereOfertas
+        quiere_ofertas: !!data.quiereOfertas,
+        tipo: data.tipo || 'asesoria'
       };
 
       fetch(SUPA_URL + '/rest/v1/precalifica_leads', {
@@ -1562,6 +1585,345 @@ function applyUIParams(contadorVisible) {
 }
 
 // Parámetros y funciones de scoring removidos del cliente — ver /app/api/calcular/route.ts
+
+// -- PDF REPORT --
+var PDF_MODE = false;
+
+function activarModoPDF() {
+  PDF_MODE = true;
+  var benv = document.getElementById('benv');
+  if (benv) benv.textContent = '📄 Descargar mi reporte de evaluación';
+  irLead();
+}
+
+function generarPDF(nom, ape, cedTxt, tel, email) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert('El generador de PDF aún está cargando. Intenta en unos segundos.');
+    return;
+  }
+
+  var btn = document.getElementById('benv');
+  if (btn) { btn.textContent = 'Generando reporte…'; btn.disabled = true; }
+
+  try {
+    var JsPDF = window.jspdf.jsPDF;
+    var doc = new JsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+    var PW = 210;
+    var mL = 18;
+    var mR_pdf = 18;
+    var cW = PW - mL - mR_pdf;
+    var y = 0;
+
+    var RED    = [192, 22, 28];
+    var RED_L  = [254, 242, 242];
+    var GRN    = [6, 95, 70];
+    var GRN_L  = [240, 253, 244];
+    var ORG    = [120, 53, 15];
+    var ORG_BG = [255, 251, 235];
+    var INK    = [26, 17, 16];
+    var INK2   = [75, 66, 64];
+    var INK3   = [122, 114, 112];
+    var RULE   = [226, 222, 218];
+    var BG     = [247, 244, 241];
+
+    var refNum = 'PRC-' + new Date().getFullYear() + '-' + (LAST_CALC_ID || '').replace(/-/g, '').substring(0, 8).toUpperCase();
+    var fecha  = new Date().toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' });
+    var nombreCompleto = (nom || '') + (ape ? ' ' + ape : '');
+
+    // ── Header ──
+    doc.setFillColor(RED[0], RED[1], RED[2]);
+    doc.rect(0, 0, PW, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+    doc.text('PrecalificateRD', mL, 10);
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    doc.text('Perfect House SRL  ·  Santo Domingo, Rep. Dom.', mL, 15.5);
+    doc.text('Tel: +1 (809) 775-3939  ·  precalificaterd.com', mL, 20);
+    doc.setFontSize(7); doc.setTextColor(220, 180, 180);
+    doc.text('No. DE REFERENCIA', PW - mR_pdf, 8.5, { align: 'right' });
+    doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+    doc.text(refNum, PW - mR_pdf, 14, { align: 'right' });
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(210, 185, 185);
+    doc.text(fecha, PW - mR_pdf, 19, { align: 'right' });
+
+    y = 28;
+
+    // ── Banner ──
+    doc.setFillColor(ORG_BG[0], ORG_BG[1], ORG_BG[2]);
+    doc.rect(0, y, PW, 7, 'F');
+    doc.setDrawColor(252, 211, 77); doc.setLineWidth(0.3);
+    doc.line(0, y + 7, PW, y + 7);
+    doc.setTextColor(ORG[0], ORG[1], ORG[2]);
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
+    doc.text('REPORTE DE EVALUACIÓN HIPOTECARIA PRELIMINAR — DOCUMENTO REFERENCIAL', PW / 2, y + 4.8, { align: 'center' });
+    y = 35 + 4;
+
+    // ── Recipient ──
+    doc.setTextColor(INK[0], INK[1], INK[2]);
+    doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+    doc.text(nombreCompleto, mL, y); y += 5;
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(INK3[0], INK3[1], INK3[2]);
+    var recipLine = cedTxt + '   ·   WhatsApp: ' + tel;
+    if (email) recipLine += '   ·   ' + email;
+    doc.text(recipLine, mL, y); y += 4;
+    doc.text('Santo Domingo, República Dominicana', mL, y); y += 7;
+    doc.setDrawColor(RULE[0], RULE[1], RULE[2]); doc.setLineWidth(0.3);
+    doc.line(mL, y, PW - mR_pdf, y); y += 5;
+
+    // ── Saludo ──
+    doc.setTextColor(INK2[0], INK2[1], INK2[2]);
+    doc.setFontSize(9.5); doc.setFont('helvetica', 'normal');
+    doc.text('Estimado/a ' + nom + ',', mL, y); y += 5.5;
+
+    var p1Lines = doc.splitTextToSize('En atención a la evaluación preliminar realizada a través de la plataforma PrecalificateRD de Perfect House SRL, nos complace presentarle el siguiente reporte de evaluación hipotecaria basado en la información financiera suministrada por usted en fecha ' + fecha + '.', cW);
+    doc.text(p1Lines, mL, y); y += p1Lines.length * 4.3 + 4;
+
+    var p2Lines = doc.splitTextToSize('Este documento tiene carácter orientativo y no constituye una aprobación formal de crédito. Los resultados reflejan una estimación calculada con criterios similares a los utilizados por entidades financieras en la República Dominicana. Para iniciar un proceso formal de financiamiento, los ingresos declarados y demás informaciones suministradas deberán ser verificados y respaldados mediante la documentación.', cW);
+    doc.text(p2Lines, mL, y); y += p2Lines.length * 4.3 + 6;
+
+    doc.setDrawColor(RULE[0], RULE[1], RULE[2]);
+    doc.line(mL, y, PW - mR_pdf, y); y += 6;
+
+    function secHead(title, color) {
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(title, mL, y);
+      doc.setDrawColor(color[0], color[1], color[2]); doc.setLineWidth(0.4);
+      doc.line(mL, y + 1.5, PW - mR_pdf, y + 1.5);
+      doc.setLineWidth(0.3); y += 7;
+    }
+
+    function fmtRD(v) { return 'RD$' + Math.round(v).toLocaleString('en-US'); }
+
+    var empMap = { formal: 'Empleado formal (nómina fija)', independiente: 'Independiente / Freelance', empresario: 'Empresario', remesa: 'Diáspora', pension: 'Pensionado' };
+    var antMap = { menos1: 'Menos de 1 año', '1a2': '1 – 2 años', '2a5': '2 – 5 años', mas5: 'Más de 5 años' };
+    var antCredMap = { menos1: 'Menos de 1 año', '1a3': '1 – 3 años', '3a5': '3 – 5 años', mas5: 'Más de 5 años', nunca: 'Sin historial previo' };
+    var tinmMap = { apartamento: 'Apartamento', casa: 'Casa / Villa', solar: 'Solar (terreno)', comercial: 'Propiedad comercial' };
+    var paisMap = { DO: 'República Dominicana', US: 'Estados Unidos', PR: 'Puerto Rico', ES: 'España', CA: 'Canadá', PA: 'Panamá', EC: 'Ecuador', SV: 'El Salvador', BS: 'Bahamas', BB: 'Barbados', JM: 'Jamaica', TT: 'Trinidad y Tobago' };
+    var tasaTxt = (TDOP * 12 * 100).toFixed(2) + '% anual';
+
+    // I. Perfil del solicitante
+    secHead('I.  PERFIL DEL SOLICITANTE', INK3);
+    doc.autoTable({
+      startY: y,
+      body: [
+        ['Edad', SD.edad + ' años'],
+        ['País de residencia', paisMap[SD.pais] || SD.pais || 'República Dominicana'],
+        ['Actividad económica', empMap[SD.emp] || SD.emp],
+        ['Antigüedad laboral', antMap[SD.ant] || SD.ant],
+        ['Ingreso mensual neto', fmtRD(SD.ingDOP)],
+        ['Cuotas mensuales actuales', fmtRD(SD.deuDOP)],
+        ['Historial de pagos', SD.atraw ? 'Con atrasos registrados' : 'Sin atrasos registrados'],
+        ['Antigüedad crediticia', antCredMap[SD.antCred] || (SD.tuvoPres ? SD.antCred : 'No aplica')],
+      ],
+      theme: 'plain',
+      styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 },
+      alternateRowStyles: { fillColor: BG },
+      columnStyles: { 0: { textColor: INK3, cellWidth: 58 }, 1: { fontStyle: 'bold' } },
+      margin: { left: mL, right: mR_pdf },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+
+    var showE2pdf = !!(SD.e2 && SD.mrDOP > 0 && SD.e2.sc >= 80);
+    var e1Sc = SD.e1.sc;
+    var e1Col = e1Sc >= 80 ? GRN : e1Sc >= 70 ? [180, 100, 0] : RED;
+    var e1Lbl = e1Sc >= 80 ? 'Alta Probabilidad' : e1Sc >= 70 ? 'Probabilidad Moderada' : 'Probabilidad Baja';
+    var e1Verdict = e1Sc >= 80 ? 'Perfil viable con entidades financieras' : e1Sc >= 70 ? 'Requiere algunos ajustes' : 'Requiere ajustes en el perfil';
+
+    var e1Rows = [
+      ['Tipo de inmueble', tinmMap[SD.tinm] || 'Propiedad'],
+      ['Valor del inmueble', fmtRD(SD.vinmDOP)],
+      ['≈ en dólares', 'US$' + Math.round(SD.vinmDOP / TC).toLocaleString('en-US')],
+      ['Inicial disponible', fmtRD(SD.iniDOP) + '\n(' + Math.round(SD.iniDOP / (SD.vinmDOP || 1) * 100) + '%)'],
+      ['Monto a financiar', fmtRD(SD.prDOP)],
+      ['Cuota mensual estimada', fmtRD(SD.e1.cDOP)],
+      ['Tasa de referencia', tasaTxt],
+      ['Plazo', '20 años'],
+    ];
+
+    if (showE2pdf) {
+      // ── Side-by-side layout ──
+      var colW = 84;
+      var colGap = 6;
+      var c1 = mL;
+      var c2 = mL + colW + colGap;
+
+      // Section headers
+      function colHead(title, color, x) {
+        var lines = doc.splitTextToSize(title, colW);
+        doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+        doc.setTextColor(color[0], color[1], color[2]);
+        doc.text(lines, x, y);
+        var headH = lines.length * 3.8;
+        doc.setDrawColor(color[0], color[1], color[2]); doc.setLineWidth(0.4);
+        doc.line(x, y + headH, x + colW, y + headH);
+        return headH;
+      }
+      var h1 = colHead('II.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED, c1);
+      var h2 = colHead('III.  ESCENARIO 2 — PERFIL ÓPTIMO ACTUAL', GRN, c2);
+      y += Math.max(h1, h2) + 5;
+
+      var tabStartY = y;
+
+      var e2Rows = [
+        ['Tipo de inmueble', tinmMap[SD.tinm] || 'Propiedad'],
+        ['Valor óptimo', fmtRD(SD.virDOP)],
+        ['≈ en dólares', 'US$' + Math.round(SD.virDOP / TC).toLocaleString('en-US')],
+        ['Inicial sugerida', fmtRD(SD.isiDOP) + '\n(' + Math.round(SD.isiDOP / (SD.virDOP || 1) * 100) + '%)'],
+        ['Monto a financiar', fmtRD(SD.mrDOP)],
+        ['Cuota mensual estimada', fmtRD(SD.e2.cDOP)],
+        ['Tasa de referencia', tasaTxt],
+        ['Plazo', '20 años'],
+      ];
+
+      var tblStyle = { fontSize: 7.5, cellPadding: { top: 2.3, bottom: 2.3, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 };
+
+      doc.autoTable({
+        startY: tabStartY,
+        body: e1Rows,
+        theme: 'plain',
+        styles: tblStyle,
+        alternateRowStyles: { fillColor: RED_L },
+        columnStyles: { 0: { textColor: INK3, cellWidth: 31 }, 1: { fontStyle: 'bold' } },
+        margin: { left: c1, right: PW - c1 - colW },
+        tableWidth: colW,
+      });
+      var e1FinalY = doc.lastAutoTable.finalY;
+
+      doc.autoTable({
+        startY: tabStartY,
+        body: e2Rows,
+        theme: 'plain',
+        styles: tblStyle,
+        alternateRowStyles: { fillColor: GRN_L },
+        columnStyles: { 0: { textColor: INK3, cellWidth: 31 }, 1: { fontStyle: 'bold' } },
+        margin: { left: c2, right: PW - c2 - colW },
+        tableWidth: colW,
+      });
+      var e2FinalY = doc.lastAutoTable.finalY;
+
+      y = Math.max(e1FinalY, e2FinalY) + 4;
+
+      // Score pills side by side
+      var pillH = 14;
+      function drawPill(x, w, fillCol, sc, lbl, verdict, verdictCol) {
+        doc.setFillColor(fillCol[0], fillCol[1], fillCol[2]);
+        doc.roundedRect(x, y, w, pillH, 2, 2, 'F');
+        doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK2[0], INK2[1], INK2[2]);
+        doc.text('Probabilidad estimada', x + 3, y + 4);
+        doc.setFontSize(6.5); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
+        doc.text(lbl, x + 3, y + 7.5);
+        doc.setFontSize(17); doc.setFont('helvetica', 'bold');
+        doc.setTextColor(verdictCol[0], verdictCol[1], verdictCol[2]);
+        doc.text(sc + '%', x + w - 3, y + 10, { align: 'right' });
+      }
+      drawPill(c1, colW, (e1Sc >= 80 ? GRN_L : RED_L), e1Sc, e1Lbl, e1Verdict, e1Col);
+      drawPill(c2, colW, GRN_L, SD.e2.sc, 'Alta Probabilidad', 'Perfil viable con entidades financieras', GRN);
+
+      y += pillH + 3;
+
+      // Verdict text side by side
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+      doc.setTextColor(e1Col[0], e1Col[1], e1Col[2]);
+      doc.text(e1Verdict, c1 + 3, y);
+      doc.setTextColor(GRN[0], GRN[1], GRN[2]);
+      doc.text('Perfil viable con entidades financieras', c2 + 3, y);
+      y += 8;
+
+    } else {
+      // ── Full-width single scenario ──
+      secHead('II.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED);
+      doc.autoTable({
+        startY: y,
+        body: e1Rows,
+        theme: 'plain',
+        styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 },
+        alternateRowStyles: { fillColor: RED_L },
+        columnStyles: { 0: { textColor: INK3, cellWidth: 58 }, 1: { fontStyle: 'bold' } },
+        margin: { left: mL, right: mR_pdf },
+      });
+      y = doc.lastAutoTable.finalY + 4;
+
+      var pillFill = e1Sc >= 80 ? GRN_L : RED_L;
+      doc.setFillColor(pillFill[0], pillFill[1], pillFill[2]);
+      doc.roundedRect(mL, y, cW, 10, 2, 2, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK2[0], INK2[1], INK2[2]);
+      doc.text('Probabilidad estimada', mL + 3, y + 4);
+      doc.setFontSize(7); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
+      doc.text(e1Lbl, mL + 3, y + 7.5);
+      doc.setFontSize(19); doc.setFont('helvetica', 'bold'); doc.setTextColor(e1Col[0], e1Col[1], e1Col[2]);
+      doc.text(e1Sc + '%', PW - mR_pdf - 3, y + 7.8, { align: 'right' });
+      y += 14;
+    }
+
+    var recLabel = showE2pdf ? 'IV.' : 'III.';
+    if (y > 230) { doc.addPage(); y = 20; }
+    secHead(recLabel + '  RECOMENDACIONES', ORG);
+
+    var recs = [
+      { n: '1', tit: 'Reducir endeudamiento', txt: 'Liquide o reduzca deudas actuales para aumentar su capacidad de pago.' },
+      { n: '2', tit: 'Aumentar el inicial', txt: 'Incrementar el inicial del 20% al 30% reduciría el monto financiado y mejoraría directamente su probabilidad de aprobación.' },
+      { n: '3', tit: 'Agregar un co-deudor', txt: 'Un co-deudor con ingresos verificables puede sumar entre 2% y 5% adicional a la probabilidad combinada.' },
+    ];
+
+    doc.setFillColor(ORG_BG[0], ORG_BG[1], ORG_BG[2]);
+    var recStartY = y;
+    var recTotalH = 0;
+    recs.forEach(function(r) {
+      var ls = doc.splitTextToSize(r.txt, cW - 14);
+      recTotalH += ls.length * 4.2 + 10;
+    });
+    doc.roundedRect(mL, y, cW, recTotalH, 2, 2, 'F');
+    doc.setDrawColor(252, 211, 77); doc.setLineWidth(0.6);
+    doc.line(mL, y, mL, y + recTotalH);
+    y += 4;
+
+    recs.forEach(function(r) {
+      doc.setFillColor(ORG[0], ORG[1], ORG[2]);
+      doc.circle(mL + 5.5, y + 3, 2.8, 'F');
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+      doc.text(r.n, mL + 5.5, y + 4, { align: 'center' });
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(INK[0], INK[1], INK[2]);
+      doc.text(r.tit, mL + 11, y + 3.5);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(INK2[0], INK2[1], INK2[2]);
+      var ls = doc.splitTextToSize(r.txt, cW - 14);
+      doc.text(ls, mL + 11, y + 7.5);
+      y += ls.length * 4.2 + 10;
+    });
+
+    y = recStartY + recTotalH + 8;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setDrawColor(RULE[0], RULE[1], RULE[2]); doc.setLineWidth(0.3);
+    doc.line(mL, y, PW - mR_pdf, y); y += 6;
+
+    doc.setFontSize(9.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK2[0], INK2[1], INK2[2]);
+    var closingLines = doc.splitTextToSize('Quedamos a su disposición para acompañarle en el proceso de búsqueda, preparación del perfil e intermediación con las entidades financieras. En Perfect House SRL contamos con asesores hipotecarios especializados listos para orientarle sin costo adicional.', cW);
+    doc.text(closingLines, mL, y); y += closingLines.length * 4.5 + 6;
+    doc.text('Atentamente,', mL, y); y += 8;
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(INK[0], INK[1], INK[2]);
+    doc.text('Perfect House SRL', mL, y); y += 5;
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
+    doc.text('Asesoría Hipotecaria Especializada', mL, y); y += 4;
+    doc.text('precalificaterd.com  ·  +1 (809) 775-3939', mL, y); y += 10;
+
+    doc.setDrawColor(RULE[0], RULE[1], RULE[2]); doc.line(mL, y, PW - mR_pdf, y); y += 4;
+    doc.setFontSize(7); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
+    var legalLines = doc.splitTextToSize('Este documento fue generado automáticamente por PrecalificateRD y tiene carácter únicamente orientativo. No constituye una aprobación, oferta ni compromiso de financiamiento por parte de ninguna entidad bancaria ni de Perfect House SRL. Las tasas y condiciones son de referencia y pueden variar según la entidad financiera.', cW);
+    doc.text(legalLines, mL, y); y += legalLines.length * 3.5 + 4;
+    doc.text('Ref: ' + refNum, PW / 2, y, { align: 'center' });
+
+    var fileName = 'reporte-hipotecario-' + nom.toLowerCase().replace(/\s+/g, '-') + '.pdf';
+    doc.save(fileName);
+
+  } catch (err) {
+    console.error('PDF error:', err);
+    alert('Ocurrió un error generando el PDF. Intenta nuevamente.');
+  } finally {
+    if (btn) { btn.textContent = '📄 Descargar mi reporte de evaluación'; btn.disabled = false; }
+  }
+}
 
 // -- INICIALIZACION --
 function initPrecal() {

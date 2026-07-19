@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(git diff *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"C:\\Users\\User\\Desktop\\CLAUDE\\PRECALIFICATERD\\precalificaterd-v11\" && git add -A && git commit -m \"auto: actualización\" && git push 2>/dev/null || true",
+            "shell": "powershell",
+            "statusMessage": "Publicando cambios en Vercel...",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

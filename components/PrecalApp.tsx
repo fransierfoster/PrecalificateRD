@@ -22,11 +22,20 @@ export default function PrecalApp() {
       return;
     }
 
-    const script = document.createElement('script');
-    script.id = 'precal-script';
-    script.src = '/precal-script.js';
-    script.onload = () => window.initPrecal?.();
-    document.body.appendChild(script);
+    const loadScript = (src: string, id?: string) =>
+      new Promise<void>((resolve) => {
+        const s = document.createElement('script');
+        if (id) s.id = id;
+        s.src = src;
+        s.onload = () => resolve();
+        s.onerror = () => resolve();
+        document.body.appendChild(s);
+      });
+
+    loadScript('/jspdf.min.js')
+      .then(() => loadScript('/jspdf-autotable.min.js'))
+      .then(() => loadScript('/precal-script.js', 'precal-script'))
+      .then(() => window.initPrecal?.());
   }, []);
 
   return <div dangerouslySetInnerHTML={{ __html: PRECAL_BODY_HTML }} />;

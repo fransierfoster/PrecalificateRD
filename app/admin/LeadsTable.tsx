@@ -19,8 +19,17 @@ export type Lead = {
   asesor_asignado: string | null;
   resultado_banco: string | null;
   notas: string | null;
+  calculo_id: string | null;
+  tipo: string | null;
   precalifica_calculos: Calculo | null;
 };
+
+function refNum(lead: Lead): string {
+  if (!lead.calculo_id) return '—';
+  const year = new Date(lead.created_at).getFullYear();
+  const hex = lead.calculo_id.replace(/-/g, '').substring(0, 8).toUpperCase();
+  return `PRC-${year}-${hex}`;
+}
 
 function fmtMoney(n: number | null, currency: string | null) {
   if (n == null) return '-';
@@ -105,7 +114,7 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
   }, [leads, scoreMin, scoreMax, contactado, moneda]);
 
   function exportCSV() {
-    const headers = ['Fecha', 'Nombre', 'Apellido', 'Telefono', 'Email', 'Documento', 'Moneda', 'Monto', 'Score E1', 'Score E2', 'Capacidad de endeudamiento', 'Quiere ofertas', 'Contactado', 'Asesor asignado', 'Resultado banco', 'Notas'];
+    const headers = ['Fecha', 'Nombre', 'Apellido', 'Telefono', 'Email', 'Documento', 'Referencia', 'Tipo', 'Moneda', 'Monto', 'Score E1', 'Score E2', 'Capacidad de endeudamiento', 'Quiere ofertas', 'Contactado', 'Asesor asignado', 'Resultado banco', 'Notas'];
     const rows = filtered.map((lead) => {
       const c = lead.precalifica_calculos;
       return [
@@ -115,6 +124,8 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
         lead.telefono || '',
         lead.email || '',
         `${lead.doc_tipo || ''} ${lead.doc_numero || ''}`.trim(),
+        refNum(lead),
+        lead.tipo || 'asesoria',
         c?.moneda_resultado || '',
         c?.vinm_dop != null ? String(c.vinm_dop) : '',
         c?.score_e1 != null ? String(c.score_e1) : '',
@@ -186,6 +197,7 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
               <th>Fecha</th>
               <th>Contacto</th>
               <th>Documento</th>
+              <th>Referencia / Tipo</th>
               <th>Resultado</th>
               <th>Ofertas</th>
               <th>Seguimiento</th>
@@ -207,6 +219,14 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
                       {lead.email}
                     </td>
                     <td>{lead.doc_tipo} {lead.doc_numero}</td>
+                    <td>
+                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#374151', display: 'block', marginBottom: 4 }}>
+                        {refNum(lead)}
+                      </span>
+                      <span className={`adm-pill ${lead.tipo === 'pdf' ? 'adm-pill-red' : 'adm-pill-gray'}`}>
+                        {lead.tipo === 'pdf' ? '📄 PDF' : '💬 Asesoría'}
+                      </span>
+                    </td>
                     <td>
                       {c ? (
                         <>
@@ -250,7 +270,7 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
                   </tr>
                   {isOpen && c && (
                     <tr>
-                      <td colSpan={8} style={{ padding: 0 }}>
+                      <td colSpan={9} style={{ padding: 0 }}>
                         <LeadDetail c={c} />
                       </td>
                     </tr>
