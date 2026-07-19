@@ -705,8 +705,9 @@ function render() {
   var _isE2Lead = false;
   if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _scLead = SD.e2.sc; _isE2Lead = true; }
 
-  var _scAd = (showE2 && SD.e2 && SD.e2.sc != null) ? SD.e2.sc : e1.sc;
-  var _montoAd = (showE2 && SD.virDOP) ? SD.virDOP : (SD.vinmDOP || 0);
+  var _e2sc = (showE2 && SD.e2 && SD.e2.sc != null) ? SD.e2.sc : 0;
+  var _scAd = Math.max(e1.sc || 0, _e2sc);
+  var _montoAd = (_e2sc >= (e1.sc || 0) && SD.virDOP) ? SD.virDOP : (SD.vinmDOP || 0);
 
   if (_scLead >= 70 || _scAd >= 70) {
     _popupTimer = setTimeout(function () {
