@@ -180,17 +180,38 @@ export default async function AdminPage() {
   const funnelMap: Record<string, number> = {};
   (eventosFunnel || []).forEach((r: FunnelRow) => { funnelMap[r.evento] = Number(r.total); });
 
-  const funnelSteps = [
-    { key: 'click_popup_cta', label: 'Popup leads → iniciar proceso' },
-    { key: 'click_popup_cerrar', label: 'Popup leads → Ahora no' },
-    { key: 'click_anuncio_visto', label: 'Anuncio mostrado' },
-    { key: 'click_anuncio_cta', label: 'Anuncio → Quiero información' },
-    { key: 'click_anuncio_cerrar', label: 'Anuncio → Ahora no' },
-    { key: 'click_asesoria', label: 'Clic → Quiero asesoría / ofertas' },
-    { key: 'click_pdf', label: 'Clic → Descargar Precalificación' },
-    { key: 'form_submit', label: 'Formulario enviado' },
+  const funnelGroups = [
+    {
+      titulo: 'Popup de leads',
+      steps: [
+        { key: 'click_popup_cta', label: 'Clic → Iniciar proceso', color: '#C0161C' },
+        { key: 'click_popup_cerrar', label: 'Clic → Ahora no', color: '#9CA3AF' },
+      ],
+    },
+    {
+      titulo: 'Anuncios de proyectos',
+      steps: [
+        { key: 'click_anuncio_visto', label: 'Anuncio mostrado', color: '#0F766E' },
+        { key: 'click_anuncio_cta', label: 'Clic → Quiero información', color: '#0F766E' },
+        { key: 'click_anuncio_cerrar', label: 'Clic → Ahora no', color: '#9CA3AF' },
+      ],
+    },
+    {
+      titulo: 'Botones del resultado',
+      steps: [
+        { key: 'click_asesoria', label: 'Clic → Quiero asesoría / ofertas', color: '#C0161C' },
+        { key: 'click_pdf', label: 'Clic → Descargar Precalificación', color: '#C0161C' },
+      ],
+    },
+    {
+      titulo: 'Formulario',
+      steps: [
+        { key: 'form_submit', label: 'Formulario enviado', color: '#065F46' },
+      ],
+    },
   ];
-  const maxFunnel = Math.max(1, ...funnelSteps.map((s) => funnelMap[s.key] || 0));
+  const allSteps = funnelGroups.flatMap((g) => g.steps);
+  const maxFunnel = Math.max(1, ...allSteps.map((s) => funnelMap[s.key] || 0));
 
   return (
     <div className="adm-page">
@@ -211,22 +232,24 @@ export default async function AdminPage() {
 
       <div className="adm-card">
         <h2>Embudo de conversión</h2>
-        <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 16px' }}>
-          Clicks en botones vs. formularios completados
-        </p>
-        {funnelSteps.map((step) => {
-          const count = funnelMap[step.key] || 0;
-          const pct = Math.round((count / maxFunnel) * 100);
-          return (
-            <div key={step.key} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-              <div style={{ width: 220, fontSize: 13, color: '#374151', flexShrink: 0 }}>{step.label}</div>
-              <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 4, height: 20, overflow: 'hidden' }}>
-                <div style={{ width: pct + '%', height: '100%', background: step.key === 'form_submit' ? '#065F46' : step.key === 'click_popup_cerrar' ? '#9CA3AF' : '#C0161C', transition: 'width .3s' }} />
-              </div>
-              <div style={{ width: 36, textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111' }}>{count}</div>
-            </div>
-          );
-        })}
+        {funnelGroups.map((group) => (
+          <div key={group.titulo} style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#9CA3AF', marginBottom: 8 }}>{group.titulo}</div>
+            {group.steps.map((step) => {
+              const count = funnelMap[step.key] || 0;
+              const pct = Math.round((count / maxFunnel) * 100);
+              return (
+                <div key={step.key} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{ width: 210, fontSize: 13, color: '#374151', flexShrink: 0 }}>{step.label}</div>
+                  <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 4, height: 18, overflow: 'hidden' }}>
+                    <div style={{ width: pct + '%', height: '100%', background: step.color, transition: 'width .3s' }} />
+                  </div>
+                  <div style={{ width: 36, textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111' }}>{count}</div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       <div className="adm-card">
