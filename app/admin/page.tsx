@@ -26,41 +26,48 @@ const FACTOR_DEFS = [
   { key: 'edad', pesoClave: 'peso_edad', label: 'Edad del solicitante' },
 ];
 
-const BUCKETS = [
-  { label: '0–20%', min: 0, max: 20 },
-  { label: '20–40%', min: 20, max: 40 },
-  { label: '40–60%', min: 40, max: 60 },
-  { label: '60–80%', min: 60, max: 80 },
-  { label: '80–100%', min: 80, max: 101 },
+const THRESHOLDS = [
+  { label: '≥ 70%', min: 70 },
+  { label: '≥ 80%', min: 80 },
+  { label: '≥ 90%', min: 90 },
 ];
 
-function bucketize(scores: (number | null | undefined)[]) {
-  const counts = BUCKETS.map(() => 0);
-  scores.forEach((s) => {
-    if (s == null) return;
-    for (let i = 0; i < BUCKETS.length; i++) {
-      if (s >= BUCKETS[i].min && s < BUCKETS[i].max) {
-        counts[i]++;
-        break;
-      }
-    }
-  });
-  return counts;
+function countAbove(scores: (number | null | undefined)[], min: number) {
+  return scores.filter((s) => s != null && (s as number) >= min).length;
 }
 
-function Histogram({ title, counts }: { title: string; counts: number[] }) {
-  const max = Math.max(1, ...counts);
-  const total = counts.reduce((a, b) => a + b, 0);
+function ScoreHistogram({ title, e1Scores, e2Scores }: { title: string; e1Scores: (number | null | undefined)[]; e2Scores: (number | null | undefined)[] }) {
+  const rows = THRESHOLDS.map((t) => ({
+    label: t.label,
+    e1: countAbove(e1Scores, t.min),
+    e2: countAbove(e2Scores, t.min),
+  }));
+  const max = Math.max(1, ...rows.flatMap((r) => [r.e1, r.e2]));
+  const totalE1 = e1Scores.filter((s) => s != null).length;
   return (
     <div className="adm-hist">
-      <h3>{title} ({total})</h3>
-      {BUCKETS.map((b, i) => (
-        <div className="adm-hist-row" key={b.label}>
-          <div className="adm-hist-label">{b.label}</div>
-          <div className="adm-hist-bar-wrap">
-            <div className="adm-hist-bar" style={{ width: `${(counts[i] / max) * 100}%` }} />
+      <h3>{title} ({totalE1})</h3>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8, fontSize: 11, color: '#6B7280' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: '#C0161C', display: 'inline-block' }} /> E1 — propiedad solicitada</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 12 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: '#0F766E', display: 'inline-block' }} /> E2 — mejor opción</span>
+      </div>
+      {rows.map((r) => (
+        <div key={r.label} style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: '#374151', marginBottom: 3 }}>{r.label}</div>
+          <div className="adm-hist-row">
+            <div className="adm-hist-label" style={{ fontSize: 11, color: '#9CA3AF' }}>E1</div>
+            <div className="adm-hist-bar-wrap">
+              <div className="adm-hist-bar" style={{ width: `${(r.e1 / max) * 100}%`, background: '#C0161C' }} />
+            </div>
+            <div className="adm-hist-count">{r.e1}</div>
           </div>
-          <div className="adm-hist-count">{counts[i]}</div>
+          <div className="adm-hist-row">
+            <div className="adm-hist-label" style={{ fontSize: 11, color: '#9CA3AF' }}>E2</div>
+            <div className="adm-hist-bar-wrap">
+              <div className="adm-hist-bar" style={{ width: `${(r.e2 / max) * 100}%`, background: '#0F766E' }} />
+            </div>
+            <div className="adm-hist-count">{r.e2}</div>
+          </div>
         </div>
       ))}
     </div>
@@ -133,8 +140,10 @@ export default async function AdminPage() {
     .order('created_at', { ascending: false })
     .returns<Calculo[]>();
 
-  const calculosCounts = bucketize((calculos || []).map((c) => c.score_e1));
-  const leadsCounts = bucketize((leads || []).map((l) => l.precalifica_calculos?.score_e1));
+  const calculosE1 = (calculos || []).map((c) => c.score_e1);
+  const calculosE2 = (calculos || []).map((c) => c.score_e2);
+  const leadsE1 = (leads || []).map((l) => l.precalifica_calculos?.score_e1);
+  const leadsE2 = (leads || []).map((l) => l.precalifica_calculos?.score_e2);
 
   const groups: Record<string, Parametro[]> = {};
   (parametros || []).forEach((p) => {
@@ -185,8 +194,8 @@ export default async function AdminPage() {
       <div className="adm-card">
         <h2>Resumen</h2>
         <div className="adm-hist-grid">
-          <Histogram title="Cálculos por probabilidad" counts={calculosCounts} />
-          <Histogram title="Leads por probabilidad" counts={leadsCounts} />
+          <ScoreHistogram title="Cálculos por probabilidad" e1Scores={calculosE1} e2Scores={calculosE2} />
+          <ScoreHistogram title="Leads por probabilidad" e1Scores={leadsE1} e2Scores={leadsE2} />
         </div>
       </div>
 
