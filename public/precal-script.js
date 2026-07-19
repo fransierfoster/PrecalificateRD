@@ -1361,6 +1361,7 @@ var QUIERE_OFERTAS = false;
 
 function trackEvent(nombre) {
   if (!SUPA_URL || !SUPA_KEY) return;
+  if (new URLSearchParams(window.location.search).get('test') === '1') return;
   var sid = sessionStorage.getItem('precal_sid');
   if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('precal_sid', sid); }
   fetch(SUPA_URL + '/rest/v1/precalifica_eventos', {
