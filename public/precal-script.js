@@ -683,10 +683,6 @@ function render() {
   var pdfSec = document.getElementById('pdf-section');
   var pdfBtn = document.getElementById('btn-pdf');
   if (pdfSec) pdfSec.style.display = 'block';
-  if (pdfBtn) {
-    pdfBtn.style.background = b1.k;
-    pdfBtn.style.boxShadow = '0 4px 15px ' + b1.k + '4D';
-  }
 
   document.getElementById('pw').style.display = 'none';
 
@@ -945,6 +941,7 @@ function reinit() {
   ATVAL = null;
   CDATVAL = null;
   PDF_MODE = false;
+  QUIERE_OFERTAS = false;
   var benvR = document.getElementById('benv');
   if (benvR) benvR.textContent = '✅ Quiero que me contacten';
 
