@@ -464,6 +464,31 @@ function chk(s) {
   return ok;
 }
 
+function bdg(s) {
+  if (s >= 90) return { c: 'b-vh', t: 'Muy Alta Probabilidad', m: 'Perfil excelente. Estás listo para aplicar.', k: '#10B981' };
+  if (s >= 80) return { c: 'b-h', t: 'Alta Probabilidad', m: 'Muy buen perfil. Las posibilidades son altas.', k: '#0F766E' };
+  if (s >= 70) return { c: 'b-m', t: 'Probabilidad Moderada', m: 'Perfil aceptable. Varias entidades podrían aprobarte.', k: '#F0A500' };
+  if (s >= 60) return { c: 'b-l', t: 'Probabilidad Baja', m: 'Hay áreas importantes por mejorar.', k: '#F97316' };
+  return { c: 'b-vl', t: 'Probabilidad Muy Baja', m: 'Tu perfil necesita mejoras significativas.', k: '#EF4444' };
+}
+
+function anim(rid, pid, sc, col) {
+  var circ = 2 * Math.PI * 22;
+  var r = document.getElementById(rid);
+  r.style.stroke = col;
+  setTimeout(function () {
+    r.style.strokeDashoffset = circ * (1 - sc / 100);
+  }, 80);
+  var c = 0;
+  var el = document.getElementById(pid);
+  var iv = setInterval(function () {
+    c = Math.min(sc, c + 2);
+    el.textContent = c + '%';
+    el.style.color = col;
+    if (c >= sc) clearInterval(iv);
+  }, 18);
+}
+
 function render() {
   var e1 = SD.e1, e2 = SD.e2, why = SD.why, sims = SD.sims, cp = SD.cp;
   var th = TH();
@@ -1103,6 +1128,98 @@ function clearSaved() {
 
   var banner = document.getElementById('restore-banner');
   if (banner) banner.style.display = 'none';
+}
+
+function calc() {
+  if (!TOK) { openM(); return; }
+  if (!chk(3)) return;
+  var bcalc = document.getElementById('bcalc');
+  if (bcalc) bcalc.disabled = true;
+
+  var edad = parseFloat(document.getElementById('edad').value) || 0;
+  var pais = document.getElementById('pais').value;
+  var emp = document.getElementById('emp').value;
+  var ant = document.getElementById('ant').value;
+  var tuvoPres = (PRESVAL === 'si');
+  var expc = tuvoPres ? (parseInt(document.getElementById('expc').value) || 0) : 0;
+  var antCred = tuvoPres ? (document.getElementById('antcred').value || 'nunca') : 'nunca';
+  var prods = tuvoPres ? getProds('prod') : ['ninguno'];
+  var atraw = (!tuvoPres || ATVAL === 'no') ? 0 : (parseInt(document.getElementById('attyp').value) || 30);
+  var atpat = atraw > 0 ? (document.getElementById('atpat').value || 'unico') : 'na';
+  var tieneCD = document.getElementById('cdtog').checked;
+  var activos = pn('activos');
+
+  var rIn = MR === 'USD' ? TC : 1;
+  var ingDOP = pn('ing') * rIn;
+  var deuDOP = pn('deu') * rIn;
+  var ingCDDOP = tieneCD ? pn('cdi') * rIn : 0;
+  var deuCDDOP = tieneCD ? pn('cdd') * rIn : 0;
+  var expcCD = tieneCD ? (parseInt(document.getElementById('cdexpc').value) || 0) : 0;
+  var antCredCD = tieneCD ? (document.getElementById('cdantcred').value || 'nunca') : 'nunca';
+  var prodsCD = tieneCD ? getProds('cdprod') : ['ninguno'];
+  var atrawCD = tieneCD && CDATVAL !== null ? (CDATVAL === 'no' ? 0 : parseInt(document.getElementById('cdattyp').value) || 30) : 0;
+  var atpatCD = atrawCD > 30 && tieneCD ? (document.getElementById('cdatpat').value || 'unico') : 'na';
+  var empCD = tieneCD ? (document.getElementById('cdemp').value || '') : '';
+  var antCD = tieneCD ? (document.getElementById('cdant').value || '') : '';
+  var paisCD = tieneCD ? (document.getElementById('cdpais').value || '') : '';
+
+  var mp = document.getElementById('mprecio').value;
+  var mpR = mp === 'USD' ? TC : 1;
+  var vinmDOP = pn('vinm') * mpR;
+  var iniDOP = pn('ini') * mpR;
+
+  fetch('/api/calcular', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      edad: edad, pais: pais, emp: emp, ant: ant, tuvoPres: tuvoPres,
+      expc: expc, antCred: antCred, prods: prods,
+      atraw: atraw, atpat: atpat, tieneCD: tieneCD, activos: activos,
+      ingDOP: ingDOP, deuDOP: deuDOP, ingCDDOP: ingCDDOP, deuCDDOP: deuCDDOP,
+      expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
+      atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
+      vinmDOP: vinmDOP, iniDOP: iniDOP, mr: MR
+    })
+  }).then(function (r) { return r.json(); }).then(function (res) {
+    if (res.error) { if (bcalc) bcalc.disabled = false; return; }
+
+    if (res.tc) TC = res.tc;
+    if (res.tdop) TDOP = res.tdop;
+    if (res.tusd) TUSD = res.tusd;
+    if (res.virDOPMin) PRECIO_MIN_USD = Math.round(res.virDOPMin / TC);
+
+    POPUP_ACTIVO = res.popupActivo !== false;
+    applyUIParams(res.contadorVisible !== false);
+
+    sendWebhook('calculo', {
+      e1: res.e1, e2: res.e2,
+      vinmDOP: vinmDOP, prDOP: res.prDOP, iniDOP: iniDOP, virDOP: res.virDOP, mrDOP: res.mrDOP, isiDOP: res.isiDOP,
+      perfil: {
+        ingDOP: ingDOP, deuDOP: deuDOP, emp: emp, ant: ant,
+        pais: pais, edad: edad, tuvoPres: tuvoPres, atraw: atraw, atpat: atpat, expc: expc,
+        antCred: antCred, prods: prods, activos: activos, tieneCD: tieneCD, ingCDDOP: ingCDDOP
+      },
+      monedaRes: MR
+    }, null);
+
+    SD = {
+      e1: res.e1, e2: res.e2, why: res.why, sims: res.sims, cp: res.cp,
+      vinmDOP: vinmDOP, iniDOP: iniDOP, prDOP: res.prDOP, mrDOP: res.mrDOP, virDOP: res.virDOP, isiDOP: res.isiDOP,
+      ingTot: ingDOP + ingCDDOP, deuDOP: deuDOP, deuCDDOP: deuCDDOP,
+      pais: pais, emp: emp, ant: ant, expc: expc, antCred: antCred, prods: prods,
+      atraw: atraw, atpat: atpat, activos: activos, edad: edad, tuvoPres: tuvoPres,
+      tieneCD: tieneCD, ingCDDOP: ingCDDOP, ingDOP: ingDOP,
+      expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
+      atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
+      e2Reached: res.e2Reached, rIn: rIn, mp: mp, virDOPMin: res.virDOPMin, e2NoViable: res.e2NoViable,
+      tinm: document.getElementById('tinm').value
+    };
+
+    render();
+  }).catch(function (err) {
+    console.error('Error al calcular:', err);
+    if (bcalc) bcalc.disabled = false;
+  });
 }
 
 // Auto-save al calcular
