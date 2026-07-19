@@ -16,8 +16,6 @@ header{background:var(--blk);padding:14px 22px;padding-top:max(14px,calc(env(saf
 .logo{display:flex;align-items:center;gap:11px;text-decoration:none;}
 .logo img{width:44px;height:44px;object-fit:contain;border-radius:6px;}
 .logo-full img{width:auto;height:46px;border-radius:0;display:block;}
-.lname{font-family:'Sora',sans-serif;font-size:17px;font-weight:800;}
-.lw{color:#FFF;}.lr{color:#C0161C;}.ld{color:#1D3A8A;}
 .hbadge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,.2);color:#6EE7B7;}
 .hero{background:var(--blk);color:#FFF;padding:52px 24px 68px;text-align:center;position:relative;overflow:hidden;}
 .hero::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:40px;background:var(--bg);clip-path:ellipse(60% 100% at 50% 100%);transition:background .3s;}
@@ -83,7 +81,6 @@ body.dark input,body.dark select{background:var(--su2);}
 .prod-ck svg{display:none;width:10px;height:10px;}
 .prod-opt.sel .prod-ck svg{display:block;}
 .prod-lbl{font-size:12px;font-weight:600;color:var(--tx);}
-.prod-hint{font-size:10px;color:var(--tx2);margin-top:1px;}
 .togwrap{display:flex;align-items:center;justify-content:space-between;background:var(--su2);border-radius:11px;padding:11px 13px;margin-bottom:6px;border:1px solid var(--bdr);}
 .twlbl{font-size:13px;font-weight:600;color:var(--tx);}
 .tog{position:relative;width:42px;height:22px;}
@@ -240,8 +237,6 @@ footer{background:var(--blk);color:rgba(255,255,255,.3);text-align:center;paddin
 footer strong{color:var(--red);}
 .btn-ofertas{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,#059669,#10B981);color:#FFF;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;padding:12px 16px;border:none;border-radius:50px;cursor:pointer;margin-top:10px;box-shadow:0 4px 15px rgba(16,185,129,.3);transition:transform .15s,box-shadow .15s;}
 .btn-ofertas:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(16,185,129,.4);}
-.btn-ofertas-e2{background:linear-gradient(135deg,#1D3A8A,#2563EB);}
-.btn-ofertas-e2:hover{box-shadow:0 6px 20px rgba(29,58,138,.4);}
 @media(max-width:480px){.r2,.dr,.fstrip,.slgrid,.sum-grid,.prod-grid{grid-template-columns:1fr;}.hero{padding:34px 14px 50px;}.sc{padding:18px 13px;}.mrs{flex-direction:column;}}
 
 .fab-wrap{position:fixed;bottom:max(24px,calc(env(safe-area-inset-bottom) + 8px));right:20px;display:flex;flex-direction:column;gap:10px;z-index:200;}
