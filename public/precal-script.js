@@ -1379,7 +1379,6 @@ function solicitarOfertas(escenario) {
 
   var btn = document.getElementById('btn-ofertas-e' + escenario);
   if (btn) {
-    btn.textContent = '↓ Completa tus datos abajo';
     btn.style.background = esAsesoria ? bdg(SD.e1.sc).k : '#065F46';
   }
 }
