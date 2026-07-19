@@ -250,5 +250,8 @@ footer strong{color:var(--red);}
 @media(max-width:480px){.fab-wrap{bottom:16px;right:12px;}}
 
 /* ── PDF Button & Form ── */
-.btn-pdf{display:block;width:100%;border:1.5px solid #C0161C;border-radius:8px;padding:10px 16px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:#C0161C;background:transparent;transition:background .15s,color .15s;}
+.pdf-row{display:flex;gap:8px;}
+.btn-pdf{flex:1;display:block;border:1.5px solid #C0161C;border-radius:8px;padding:10px 16px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:#C0161C;background:transparent;transition:background .15s,color .15s;}
 .btn-pdf:hover{background:#C0161C;color:#fff;}
+.btn-share{flex:1;display:block;border:1.5px solid #25D366;border-radius:8px;padding:10px 16px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:#25D366;background:transparent;transition:background .15s,color .15s;}
+.btn-share:hover{background:#25D366;color:#fff;}
