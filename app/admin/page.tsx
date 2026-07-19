@@ -157,12 +157,12 @@ export default async function AdminPage() {
   const uiPopup = uiParams.find((p) => p.clave === 'ui_popup_activo');
   const uiContador = uiParams.find((p) => p.clave === 'ui_contador_visible');
 
+  type FunnelRow = { evento: string; total: number };
   const { data: eventosFunnel } = await supabase
-    .rpc('contar_eventos_funnel')
-    .returns<{ evento: string; total: number }[]>();
+    .rpc('contar_eventos_funnel') as { data: FunnelRow[] | null };
 
   const funnelMap: Record<string, number> = {};
-  (eventosFunnel || []).forEach((r) => { funnelMap[r.evento] = Number(r.total); });
+  (eventosFunnel || []).forEach((r: FunnelRow) => { funnelMap[r.evento] = Number(r.total); });
 
   const funnelSteps = [
     { key: 'click_popup_cta', label: 'Clic popup → iniciar proceso' },
