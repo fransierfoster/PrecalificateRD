@@ -1360,6 +1360,9 @@ var QUIERE_OFERTAS = false;
 
 function solicitarOfertas(escenario) {
   QUIERE_OFERTAS = true;
+  PDF_MODE = false;
+  var benvEl = document.getElementById('benv');
+  if (benvEl) benvEl.textContent = '✅ Quiero que me contacten';
 
   var esAsesoria = escenario === 1 && SD.e1.sc < 70;
   var txt = document.getElementById('ofertas-text');
