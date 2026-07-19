@@ -76,8 +76,29 @@ export async function POST(req: NextRequest) {
     histRows.push(row('Productos financieros', (sd.prods || []).join(', ') || 'Ninguno'));
     histRows.push(row('Co-deudor', sd.tieneCD ? `Sí — ingreso ${fmtMoney(sd.ingCDDOP, currency)}` : 'No'));
 
+    const WHY_ICON: Record<string, string> = { ok: '✅', w: '⚠️', b: '❌' };
+    const WHY_COLOR: Record<string, string> = { ok: '#065F46', w: '#92400E', b: '#991B1B' };
+    const whyHtml = Array.isArray(sd.why) && sd.why.length
+      ? sd.why.map((w: { t: string; x: string; s: string }) =>
+          `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:${w.t === 'ok' ? '#F0FDF4' : w.t === 'w' ? '#FFFBEB' : '#FEF2F2'};">
+            <div style="font-size:13px;font-weight:bold;color:${WHY_COLOR[w.t] || '#333'};">${WHY_ICON[w.t] || '•'} ${w.x}</div>
+            <div style="font-size:12px;color:#555;margin-top:3px;">${w.s}</div>
+          </div>`).join('')
+      : '';
+
+    const simsHtml = Array.isArray(sd.sims) && sd.sims.filter((s: { d: number }) => s.d > 0).length
+      ? sd.sims.filter((s: { d: number }) => s.d > 0).map((s: { l: string; d: number; b: number }) =>
+          `<div style="margin-bottom:6px;padding:7px 12px;border-radius:6px;background:#EFF6FF;font-size:12px;">
+            <span style="font-weight:bold;color:#1D4ED8;">+${s.d}%</span>
+            <span style="color:#333;margin-left:6px;">${s.l}</span>
+            <span style="color:#6B7280;margin-left:6px;">→ llegaría a ${s.b}%</span>
+          </div>`).join('')
+      : '';
+
     const section = (title: string, htmlRows: string[]) =>
       htmlRows.length ? `<h3 style="margin:18px 0 6px;font-size:14px;color:#C0161C;">${title}</h3><table style="width:100%;border-collapse:collapse;">${htmlRows.join('')}</table>` : '';
+    const sectionHtml = (title: string, content: string) =>
+      content ? `<h3 style="margin:18px 0 6px;font-size:14px;color:#C0161C;">${title}</h3>${content}` : '';
 
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
@@ -90,6 +111,8 @@ export async function POST(req: NextRequest) {
           ${section('✅ Escenario 2 — Mejor opción', e2Rows)}
           ${section('💼 Perfil financiero', perfilRows)}
           ${section('📊 Historial y experiencia crediticia', histRows)}
+          ${sectionHtml('🔍 ¿Por qué este resultado?', whyHtml)}
+          ${sectionHtml('📈 Acciones para mejorar la probabilidad', simsHtml)}
         </div>
       </div>`;
 
