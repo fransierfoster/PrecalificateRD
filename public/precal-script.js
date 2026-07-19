@@ -701,14 +701,17 @@ function render() {
   }, 150);
 
   clearTimeout(_popupTimer);
-  var _sc = e1.sc;
-  var _monto = SD.vinmDOP || 0;
-  var _isE2 = false;
-  if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _sc = SD.e2.sc; _isE2 = true; }
-  if (_sc >= 70) {
+  var _scLead = e1.sc;
+  var _isE2Lead = false;
+  if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _scLead = SD.e2.sc; _isE2Lead = true; }
+
+  var _scAd = (showE2 && SD.e2 && SD.e2.sc != null) ? SD.e2.sc : e1.sc;
+  var _montoAd = (showE2 && SD.virDOP) ? SD.virDOP : (SD.vinmDOP || 0);
+
+  if (_scLead >= 70 || _scAd >= 70) {
     _popupTimer = setTimeout(function () {
-      var ad = getAdParaScore(_sc, _monto);
-      if (ad) { showAdPopup(ad); } else { showLeadPopup(_sc, _isE2); }
+      var ad = (_scAd >= 70) ? getAdParaScore(_scAd, _montoAd) : null;
+      if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70) { showLeadPopup(_scLead, _isE2Lead); }
     }, 2500);
   }
 }
@@ -739,7 +742,7 @@ function getAdParaScore(sc, monto) {
   return null;
 }
 
-function showAdPopup(ad) {
+function showAdPopup(ad, sc) {
   AD_POPUP_DATA = ad;
   var popup = document.getElementById('ad-popup');
   if (!popup) return;
@@ -750,11 +753,8 @@ function showAdPopup(ad) {
   var refEl = document.getElementById('ad-popup-ref');
   if (refEl) { refEl.textContent = ad.referencia || ''; refEl.style.display = ad.referencia ? '' : 'none'; }
 
-  var closeBtn = document.getElementById('ad-popup-close-btn');
-  if (closeBtn) closeBtn.style.display = 'flex';
-
-  var refIsShowing = ad.referencia && refEl;
-  if (closeBtn && refIsShowing) closeBtn.style.display = 'none';
+  var scoreEl = document.getElementById('ad-popup-score');
+  if (scoreEl) scoreEl.textContent = sc != null ? sc : '';
 
   document.getElementById('ad-popup-titulo').textContent = ad.titulo || '';
   document.getElementById('ad-popup-descripcion').textContent = ad.descripcion || '';

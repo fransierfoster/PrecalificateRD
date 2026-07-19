@@ -118,31 +118,42 @@ export const PRECAL_BODY_HTML = `<div class="thbar"><span class="thlbl" id="thlb
   <div class="contxt" id="ofertas-text">🏠 Deseo recibir ofertas de propiedades dentro de mi rango de precio</div>
 </div>
 <div class="conrow" onclick="togCon()"><div class="conck" id="conck"><svg viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="contxt">Autorizo el tratamiento de mis datos para preevaluación financiera y contacto por parte de Perfect House SRL y entidades financieras aliadas. <a onclick="openM();event.stopPropagation()">Ver términos completos</a></div></div><button class="bgold" id="benv" onclick="enviar()" disabled>✅ Quiero que me contacten</button></div><button class="bs" onclick="showS(3);ssc();" style="margin-top:16px;">← Editar mis datos</button><button class="bs" onclick="reinit()">🔄 Nueva consulta</button>
-</div><div id="success"><div class="sucico">✅</div><h2>¡Solicitud enviada!</h2><p>Un asesor de <strong style="color:var(--red)">Perfect House</strong> se comunicará contigo.</p><br/><button class="bp" style="max-width:260px;margin:0 auto;display:block;" onclick="reinit()">Hacer otra consulta</button></div></div><div class="modal" id="modal"><div class="mbox"><h3>📄 Términos y Condiciones — PrecalificateRD</h3><p><strong>1. Naturaleza del servicio</strong></p><p>PrecalificateRD genera estimaciones de probabilidad orientativas. No constituyen aprobación ni oferta formal de ninguna entidad financiera.</p><p><strong>2. Limitación de responsabilidad</strong></p><p>Perfect House SRL no es una entidad financiera regulada. No aprueba ni rechaza préstamos.</p><p><strong>3. Autorización de uso de datos</strong></p><ul><li>Utilizar los datos para generar la evaluación solicitada.</li><li>Compartir información con entidades financieras aliadas de PrecalificateRD.</li><li>Realizar consultas de historial crediticio cuando sea necesario para un proceso formal.</li><li>Contactar al usuario vía WhatsApp, correo o llamada con fines de asesoría hipotecaria.</li></ul><p><strong>4. Sin impacto en el historial crediticio</strong></p><p>Esta herramienta no genera ningún registro en ningún buró crediticio.</p><p><strong>5. Tasas de referencia</strong></p><p>Préstamos en pesos: aproximadamente <span id="tasaDopTxt">11.93%</span> anual. En dólares: aproximadamente <span id="tasaUsdTxt">8.50%</span> anual. Son tasas referenciales, no representan oferta formal de ninguna entidad.</p><button class="mclose" onclick="closeM()">Entendido — Cerrar</button></div></div><div id="ad-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.52);z-index:9999;align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
-  <div style="background:#fff;border-radius:16px;overflow:hidden;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.35);">
-    <div id="ad-popup-img-wrap" style="position:relative;height:160px;background:#1B4332;overflow:hidden;">
+</div><div id="success"><div class="sucico">✅</div><h2>¡Solicitud enviada!</h2><p>Un asesor de <strong style="color:var(--red)">Perfect House</strong> se comunicará contigo.</p><br/><button class="bp" style="max-width:260px;margin:0 auto;display:block;" onclick="reinit()">Hacer otra consulta</button></div></div><div class="modal" id="modal"><div class="mbox"><h3>📄 Términos y Condiciones — PrecalificateRD</h3><p><strong>1. Naturaleza del servicio</strong></p><p>PrecalificateRD genera estimaciones de probabilidad orientativas. No constituyen aprobación ni oferta formal de ninguna entidad financiera.</p><p><strong>2. Limitación de responsabilidad</strong></p><p>Perfect House SRL no es una entidad financiera regulada. No aprueba ni rechaza préstamos.</p><p><strong>3. Autorización de uso de datos</strong></p><ul><li>Utilizar los datos para generar la evaluación solicitada.</li><li>Compartir información con entidades financieras aliadas de PrecalificateRD.</li><li>Realizar consultas de historial crediticio cuando sea necesario para un proceso formal.</li><li>Contactar al usuario vía WhatsApp, correo o llamada con fines de asesoría hipotecaria.</li></ul><p><strong>4. Sin impacto en el historial crediticio</strong></p><p>Esta herramienta no genera ningún registro en ningún buró crediticio.</p><p><strong>5. Tasas de referencia</strong></p><p>Préstamos en pesos: aproximadamente <span id="tasaDopTxt">11.93%</span> anual. En dólares: aproximadamente <span id="tasaUsdTxt">8.50%</span> anual. Son tasas referenciales, no representan oferta formal de ninguna entidad.</p><button class="mclose" onclick="closeM()">Entendido — Cerrar</button></div></div><div id="ad-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:flex-end;justify-content:center;padding:0;">
+  <div style="background:#fff;border-radius:20px 20px 0 0;overflow:hidden;width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,.3);max-height:92vh;overflow-y:auto;">
+    <div id="ad-popup-img-wrap" style="position:relative;height:200px;background:#1B4332;overflow:hidden;flex-shrink:0;">
       <img id="ad-popup-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;" />
-      <div id="ad-popup-ref" style="position:absolute;top:8px;right:8px;background:#C0161C;color:#fff;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;"></div>
-      <div id="ad-popup-desc-badge" style="position:absolute;top:8px;left:8px;background:#F59E0B;color:#78350F;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;display:none;"></div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.65));padding:10px 12px 12px;">
-        <div id="ad-popup-img-sub" style="color:rgba(255,255,255,.7);font-size:10px;margin-bottom:2px;">Proyecto destacado para tu perfil</div>
-        <div id="ad-popup-titulo" style="color:#fff;font-size:13px;font-weight:600;line-height:1.3;"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.72));"></div>
+      <button onclick="trackEvent('click_anuncio_cerrar');closeAdPopup();" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,.4);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;line-height:30px;text-align:center;">✕</button>
+      <div id="ad-popup-ref" style="position:absolute;top:12px;left:12px;background:#C0161C;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;"></div>
+      <div id="ad-popup-desc-badge" style="position:absolute;bottom:52px;left:12px;background:#F59E0B;color:#78350F;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;display:none;"></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 14px;">
+        <div style="color:rgba(255,255,255,.75);font-size:11px;margin-bottom:3px;">✨ Encontramos una mejor opción para tu perfil</div>
+        <div id="ad-popup-titulo" style="color:#fff;font-size:15px;font-weight:700;line-height:1.3;"></div>
       </div>
-      <button onclick="closeAdPopup()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.35);border:none;color:#fff;width:26px;height:26px;border-radius:50%;font-size:13px;cursor:pointer;display:none;" id="ad-popup-close-btn">✕</button>
     </div>
-    <div style="padding:14px 16px 16px;">
-      <div id="ad-popup-descuento" style="display:none;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:8px 10px;margin-bottom:10px;display:none;">
+    <div style="padding:16px 18px 20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:#F0FDF4;border-radius:10px;padding:10px 14px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:#065F46;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
+          <span id="ad-popup-score" style="color:#fff;font-size:20px;font-weight:700;line-height:1;"></span>
+          <span style="color:rgba(255,255,255,.7);font-size:10px;">%</span>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#065F46;">Probabilidad de aprobación</div>
+          <div style="font-size:11px;color:#6B7280;margin-top:1px;">Escenario 2 — mejor opción según tu perfil</div>
+        </div>
+      </div>
+      <div id="ad-popup-descuento" style="display:none;background:#FEF3C7;border:1px solid #FCD34D;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div id="ad-popup-desc-monto" style="font-size:20px;font-weight:700;color:#92400E;line-height:1;white-space:nowrap;"></div>
+          <div id="ad-popup-desc-monto" style="font-size:22px;font-weight:700;color:#92400E;line-height:1;white-space:nowrap;"></div>
           <div>
-            <div id="ad-popup-desc-texto" style="font-size:11px;color:#92400E;line-height:1.4;"></div>
-            <div id="ad-popup-desc-codigo" style="font-size:10px;background:#fff;border:1px solid #FCD34D;border-radius:4px;padding:2px 6px;color:#78350F;font-family:monospace;margin-top:3px;display:inline-block;"></div>
+            <div id="ad-popup-desc-texto" style="font-size:12px;color:#92400E;line-height:1.4;"></div>
+            <div id="ad-popup-desc-codigo" style="font-size:11px;background:#fff;border:1px solid #FCD34D;border-radius:4px;padding:2px 8px;color:#78350F;font-family:monospace;margin-top:4px;display:inline-block;"></div>
           </div>
         </div>
       </div>
-      <p id="ad-popup-descripcion" style="font-size:12px;color:#6B7280;margin:0 0 12px;line-height:1.5;"></p>
-      <button id="ad-popup-cta" onclick="trackEvent('click_anuncio_cta');irLeadAnuncio();closeAdPopup();" style="display:block;width:100%;border:none;border-radius:12px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:#fff;background:#1B4332;">Quiero información sobre este proyecto</button>
-      <button onclick="trackEvent('click_anuncio_cerrar');closeAdPopup();" style="display:block;width:100%;background:none;border:none;margin-top:8px;font-size:12px;color:#9CA3AF;cursor:pointer;">Ahora no, seguir explorando</button>
+      <p id="ad-popup-descripcion" style="font-size:13px;color:#374151;margin:0 0 14px;line-height:1.6;"></p>
+      <button onclick="trackEvent('click_anuncio_cta');irLeadAnuncio();closeAdPopup();" style="display:block;width:100%;border:none;border-radius:14px;padding:15px;font-size:14px;font-weight:700;cursor:pointer;text-align:center;color:#fff;background:#065F46;box-sizing:border-box;">Quiero información sobre este proyecto</button>
+      <button onclick="trackEvent('click_anuncio_cerrar');closeAdPopup();" style="display:block;width:100%;background:none;border:none;margin-top:10px;font-size:13px;color:#9CA3AF;cursor:pointer;padding:6px;">Ahora no, seguir explorando</button>
     </div>
   </div>
 </div>
