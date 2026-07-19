@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     const e1 = sd.e1 || {};
     const e2 = sd.e2 || {};
     const currency = sd.mp === 'USD' ? 'USD' : 'DOP';
+    const anuncio = body.anuncio || null;
 
     const rows: string[] = [];
     const row = (label: string, value: string) =>
@@ -111,6 +112,11 @@ export async function POST(req: NextRequest) {
           ${section('✅ Escenario 2 — Mejor opción', e2Rows)}
           ${section('💼 Perfil financiero', perfilRows)}
           ${section('📊 Historial y experiencia crediticia', histRows)}
+          ${anuncio ? `<div style="margin:16px 0;padding:10px 14px;background:#D1FAE5;border-radius:8px;border-left:4px solid #10B981;">
+            <div style="font-size:13px;font-weight:bold;color:#065F46;margin-bottom:4px;">🏗️ Interesado en anuncio</div>
+            <div style="font-size:13px;color:#065F46;">${anuncio.titulo || ''} <span style="background:#C0161C;color:#fff;font-size:11px;padding:1px 7px;border-radius:10px;margin-left:4px;">${anuncio.referencia || ''}</span></div>
+            ${anuncio.descuento_monto ? `<div style="font-size:12px;color:#065F46;margin-top:4px;">Descuento aplicado: <strong>${anuncio.descuento_moneda === 'USD' ? 'US$' : 'RD$'}${Number(anuncio.descuento_monto).toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>${anuncio.descuento_codigo ? ` · Código: <code>${anuncio.descuento_codigo}</code>` : ''}</div>` : ''}
+          </div>` : ''}
           ${sectionHtml('🔍 ¿Por qué este resultado?', whyHtml)}
           ${sectionHtml('📈 Acciones para mejorar la probabilidad', simsHtml)}
         </div>

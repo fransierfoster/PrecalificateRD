@@ -701,10 +701,15 @@ function render() {
   }, 150);
 
   clearTimeout(_popupTimer);
-  if (e1.sc >= 70) {
-    _popupTimer = setTimeout(function () { showLeadPopup(e1.sc, false); }, 2500);
-  } else if (showE2 && SD.e2 && SD.e2.sc >= 80) {
-    _popupTimer = setTimeout(function () { showLeadPopup(SD.e2.sc, true); }, 2500);
+  var _sc = e1.sc;
+  var _monto = SD.vinmDOP || 0;
+  var _isE2 = false;
+  if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _sc = SD.e2.sc; _isE2 = true; }
+  if (_sc >= 70) {
+    _popupTimer = setTimeout(function () {
+      var ad = getAdParaScore(_sc, _monto);
+      if (ad) { showAdPopup(ad); } else { showLeadPopup(_sc, _isE2); }
+    }, 2500);
   }
 }
 
@@ -713,8 +718,82 @@ function closeLeadPopup() {
   if (p) p.style.display = 'none';
 }
 
+// ── ANUNCIOS ──
+var ANUNCIOS_ACTIVOS = [];
+var AD_POPUP_DATA = null;
+
+function cargarAnuncios() {
+  if (!SUPA_URL || !SUPA_KEY) return;
+  fetch(SUPA_URL + '/rest/v1/precalifica_anuncios?activo=eq.true&select=*&order=orden.asc', {
+    headers: supaHeaders({})
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (Array.isArray(data)) ANUNCIOS_ACTIVOS = data;
+  }).catch(function() {});
+}
+
+function getAdParaScore(sc, monto) {
+  for (var i = 0; i < ANUNCIOS_ACTIVOS.length; i++) {
+    var ad = ANUNCIOS_ACTIVOS[i];
+    if (sc >= (ad.score_minimo || 0) && monto >= (ad.monto_minimo || 0)) return ad;
+  }
+  return null;
+}
+
+function showAdPopup(ad) {
+  AD_POPUP_DATA = ad;
+  var popup = document.getElementById('ad-popup');
+  if (!popup) return;
+
+  var img = document.getElementById('ad-popup-img');
+  if (img) { img.src = ad.imagen_url || ''; img.style.display = ad.imagen_url ? '' : 'none'; }
+
+  var refEl = document.getElementById('ad-popup-ref');
+  if (refEl) { refEl.textContent = ad.referencia || ''; refEl.style.display = ad.referencia ? '' : 'none'; }
+
+  var closeBtn = document.getElementById('ad-popup-close-btn');
+  if (closeBtn) closeBtn.style.display = 'flex';
+
+  var refIsShowing = ad.referencia && refEl;
+  if (closeBtn && refIsShowing) closeBtn.style.display = 'none';
+
+  document.getElementById('ad-popup-titulo').textContent = ad.titulo || '';
+  document.getElementById('ad-popup-descripcion').textContent = ad.descripcion || '';
+
+  var descDiv = document.getElementById('ad-popup-descuento');
+  if (descDiv) {
+    if (ad.descuento_activo && ad.descuento_monto) {
+      var sym = ad.descuento_moneda === 'USD' ? 'US$' : 'RD$';
+      var montoFmt = sym + Number(ad.descuento_monto).toLocaleString('en-US', { maximumFractionDigits: 0 });
+      document.getElementById('ad-popup-desc-monto').textContent = montoFmt;
+      document.getElementById('ad-popup-desc-texto').textContent = ad.descuento_texto || '';
+      var codEl = document.getElementById('ad-popup-desc-codigo');
+      if (codEl) { codEl.textContent = ad.descuento_codigo || ''; codEl.style.display = ad.descuento_codigo ? '' : 'none'; }
+      var badgeEl = document.getElementById('ad-popup-desc-badge');
+      if (badgeEl) { badgeEl.textContent = montoFmt + ' de descuento'; badgeEl.style.display = ''; }
+      descDiv.style.display = '';
+    } else {
+      descDiv.style.display = 'none';
+      var badgeEl2 = document.getElementById('ad-popup-desc-badge');
+      if (badgeEl2) badgeEl2.style.display = 'none';
+    }
+  }
+
+  trackEvent('click_anuncio_visto');
+  popup.style.display = 'flex';
+}
+
+function closeAdPopup() {
+  var popup = document.getElementById('ad-popup');
+  if (popup) popup.style.display = 'none';
+}
+
+function irLeadAnuncio() {
+  irLead();
+}
+
 function showLeadPopup(sc, isE2) {
   if (!POPUP_ACTIVO) return;
+  if (ANUNCIOS_ACTIVOS.length > 0) return;
   var color, badge, title, sub, body;
   if (sc >= 90) {
     color = '#059669';
@@ -1300,7 +1379,7 @@ function sendWebhook(tipo, data, lead) {
       fetch('/api/notify-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead: lead, quiereOfertas: !!data.quiereOfertas, sd: SD })
+        body: JSON.stringify({ lead: lead, quiereOfertas: !!data.quiereOfertas, sd: SD, anuncio: AD_POPUP_DATA ? { titulo: AD_POPUP_DATA.titulo, referencia: AD_POPUP_DATA.referencia, descuento_monto: AD_POPUP_DATA.descuento_monto, descuento_moneda: AD_POPUP_DATA.descuento_moneda, descuento_codigo: AD_POPUP_DATA.descuento_codigo } : null })
       }).catch(function (err) {
         console.log('Notify lead error:', err);
       });
@@ -1770,6 +1849,7 @@ function initPrecal() {
   setTimeout(loadForm, 300);
   fetchContadorReal();
   fetchSolicitudesReal();
+  cargarAnuncios();
 }
 
 if (typeof window !== 'undefined') {

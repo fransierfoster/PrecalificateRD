@@ -5,6 +5,7 @@ import LeadsTable, { type Lead } from './LeadsTable';
 import CalculosTable, { type Calculo } from './CalculosTable';
 import ParamForm from './ParamForm';
 import ToggleParamForm from './ToggleParamForm';
+import AnunciosPanel, { type Anuncio } from './AnuncioForm';
 import './admin.css';
 
 type Parametro = {
@@ -166,6 +167,12 @@ export default async function AdminPage() {
   const uiPopup = uiParams.find((p) => p.clave === 'ui_popup_activo');
   const uiContador = uiParams.find((p) => p.clave === 'ui_contador_visible');
 
+  const { data: anuncios } = await supabase
+    .from('precalifica_anuncios')
+    .select('*')
+    .order('orden')
+    .returns<Anuncio[]>();
+
   type FunnelRow = { evento: string; total: number };
   const { data: eventosFunnel } = await supabase
     .rpc('contar_eventos_funnel') as { data: FunnelRow[] | null };
@@ -174,11 +181,14 @@ export default async function AdminPage() {
   (eventosFunnel || []).forEach((r: FunnelRow) => { funnelMap[r.evento] = Number(r.total); });
 
   const funnelSteps = [
-    { key: 'click_popup_cta', label: 'Clic popup → iniciar proceso' },
+    { key: 'click_popup_cta', label: 'Popup leads → iniciar proceso' },
+    { key: 'click_popup_cerrar', label: 'Popup leads → Ahora no' },
+    { key: 'click_anuncio_visto', label: 'Anuncio mostrado' },
+    { key: 'click_anuncio_cta', label: 'Anuncio → Quiero información' },
+    { key: 'click_anuncio_cerrar', label: 'Anuncio → Ahora no' },
     { key: 'click_asesoria', label: 'Clic → Quiero asesoría / ofertas' },
     { key: 'click_pdf', label: 'Clic → Descargar Precalificación' },
     { key: 'form_submit', label: 'Formulario enviado' },
-    { key: 'click_popup_cerrar', label: 'Popup cerrado (Ahora no)' },
   ];
   const maxFunnel = Math.max(1, ...funnelSteps.map((s) => funnelMap[s.key] || 0));
 
@@ -217,6 +227,11 @@ export default async function AdminPage() {
             </div>
           );
         })}
+      </div>
+
+      <div className="adm-card">
+        <h2>Anuncios de proyectos</h2>
+        <AnunciosPanel anuncios={anuncios || []} total={(anuncios || []).length} />
       </div>
 
       <div className="adm-card">
