@@ -683,6 +683,7 @@ function render() {
   var pdfSec = document.getElementById('pdf-section');
   var pdfBtn = document.getElementById('btn-pdf');
   if (pdfSec) pdfSec.style.display = 'block';
+  if (pdfBtn) pdfBtn.style.display = (e1.sc >= 70) ? 'block' : 'none';
 
   document.getElementById('pw').style.display = 'none';
 
@@ -1311,6 +1312,7 @@ calc = function () {
 function sendWebhook(tipo, data, lead) {
   try {
     if (!SUPA_URL || !SUPA_KEY) return;
+    if (new URLSearchParams(window.location.search).get('test') === '1') return;
 
     if (tipo === 'calculo') {
       var newId = (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(16) + Math.random().toString(16).slice(2)));

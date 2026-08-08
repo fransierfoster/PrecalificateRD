@@ -180,37 +180,14 @@ export default async function AdminPage() {
   const funnelMap: Record<string, number> = {};
   (eventosFunnel || []).forEach((r: FunnelRow) => { funnelMap[r.evento] = Number(r.total); });
 
-  const funnelGroups = [
-    {
-      titulo: 'Popup de leads',
-      steps: [
-        { key: 'click_popup_cta', label: 'Clic → Iniciar proceso', color: '#C0161C' },
-        { key: 'click_popup_cerrar', label: 'Clic → Ahora no', color: '#9CA3AF' },
-      ],
-    },
-    {
-      titulo: 'Anuncios de proyectos',
-      steps: [
-        { key: 'click_anuncio_visto', label: 'Anuncio mostrado', color: '#0F766E' },
-        { key: 'click_anuncio_cta', label: 'Clic → Quiero información', color: '#0F766E' },
-        { key: 'click_anuncio_cerrar', label: 'Clic → Ahora no', color: '#9CA3AF' },
-      ],
-    },
-    {
-      titulo: 'Botones del resultado',
-      steps: [
-        { key: 'click_asesoria', label: 'Clic → Quiero asesoría / ofertas', color: '#C0161C' },
-        { key: 'click_pdf', label: 'Clic → Descargar Precalificación', color: '#C0161C' },
-      ],
-    },
-    {
-      titulo: 'Formulario',
-      steps: [
-        { key: 'form_submit', label: 'Formulario enviado', color: '#065F46' },
-      ],
-    },
+  const funnelSteps = [
+    { key: 'click_asesoria',    label: 'Quiero asesoría / ofertas',              color: '#C0161C' },
+    { key: 'click_pdf',         label: 'Descargar Precalificación',               color: '#C0161C' },
+    { key: 'click_popup_cta',   label: 'Popup — Quiero iniciar el proceso',       color: '#C0161C' },
+    { key: 'click_anuncio_cta', label: 'Anuncio — Quiero información del proyecto', color: '#0F766E' },
+    { key: 'form_submit',       label: 'Formulario completado',                   color: '#065F46' },
   ];
-  const allSteps = funnelGroups.flatMap((g) => g.steps);
+  const allSteps = funnelSteps;
   const maxFunnel = Math.max(1, ...allSteps.map((s) => funnelMap[s.key] || 0));
 
   return (
@@ -231,30 +208,35 @@ export default async function AdminPage() {
       </div>
 
       <div className="adm-card">
-        <h2>Embudo de conversión</h2>
-        {funnelGroups.map((group) => (
-          <div key={group.titulo} style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#9CA3AF', marginBottom: 8 }}>{group.titulo}</div>
-            {group.steps.map((step) => {
-              const count = funnelMap[step.key] || 0;
-              const pct = Math.round((count / maxFunnel) * 100);
-              return (
-                <div key={step.key} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                  <div style={{ width: 210, fontSize: 13, color: '#374151', flexShrink: 0 }}>{step.label}</div>
+        <h2>Clics hacia el formulario</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {allSteps.map((step, i) => {
+            const count = funnelMap[step.key] || 0;
+            const pct = Math.round((count / maxFunnel) * 100);
+            const isLast = i === allSteps.length - 1;
+            return (
+              <div key={step.key}>
+                {isLast && <div style={{ borderTop: '1px solid #E5E7EB', margin: '6px 0' }} />}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 240, fontSize: 13, color: '#374151', flexShrink: 0 }}>{step.label}</div>
                   <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 4, height: 18, overflow: 'hidden' }}>
                     <div style={{ width: pct + '%', height: '100%', background: step.color, transition: 'width .3s' }} />
                   </div>
                   <div style={{ width: 36, textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111' }}>{count}</div>
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="adm-card">
-        <h2>Anuncios de proyectos</h2>
-        <AnunciosPanel anuncios={anuncios || []} total={(anuncios || []).length} />
+        <details className="adm-section-details">
+          <summary><h2 style={{ display: 'inline' }}>Anuncios de proyectos {(anuncios || []).some(a => a.activo) ? <span style={{ fontSize: 12, fontWeight: 400, color: '#065F46', background: '#D1FAE5', padding: '2px 8px', borderRadius: 10, marginLeft: 8 }}>Activo</span> : ''}</h2></summary>
+          <div style={{ marginTop: 14 }}>
+            <AnunciosPanel anuncios={anuncios || []} total={(anuncios || []).length} />
+          </div>
+        </details>
       </div>
 
       <div className="adm-card">
