@@ -543,11 +543,11 @@ function render() {
   var bo1 = document.getElementById('btn-ofertas-e1');
   if (bo1) {
     if (e1.sc >= 70) {
-      bo1.textContent = '🏠 Quiero recibir ofertas dentro de mi mejor probabilidad de aprobación';
+      bo1.textContent = 'Recibir ofertas de inmuebles';
       bo1.style.background = '';
       bo1.style.boxShadow = '';
     } else {
-      bo1.textContent = '🤝 Quiero asesoria para mejorar mi perfil crediticio';
+      bo1.textContent = 'Quiero asesoría';
       bo1.style.background = b1.k;
       bo1.style.boxShadow = '0 4px 15px ' + b1.k + '4D';
     }
@@ -583,9 +583,9 @@ function render() {
         return '<li>' + f + '</li>';
       }).join('');
 
-      var cdBtnIns = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar un co-deudor para complementar tu experiencia crediticia</button>' : '';
+      var cdBtnIns = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar co-deudor</button>' : '';
 
-      aBox.innerHTML = '<div class="asesor-box"><h4>Aun no encontramos una propiedad realista con tu perfil</h4><p>Ni reduciendo el monto del inmueble tu perfil actual alcanza una probabilidad aceptable. Antes de buscar propiedad, te recomendamos fortalecer estos puntos:</p><ul class="asesor-actions">' + fHTMLIns + '</ul>' + cdBtnIns + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a mejorar tu perfil crediticio</button></div>';
+      aBox.innerHTML = '<div class="asesor-box"><h4>Aun no encontramos una propiedad realista con tu perfil</h4><p>Ni reduciendo el monto del inmueble tu perfil actual alcanza una probabilidad aceptable. Antes de buscar propiedad, te recomendamos fortalecer estos puntos:</p><ul class="asesor-actions">' + fHTMLIns + '</ul>' + cdBtnIns + '<button class="btn-asesor" onclick="irLead()">Hablar con un asesor</button></div>';
       aBox.style.display = 'block';
     } else {
       e2box.style.display = '';
@@ -635,9 +635,9 @@ function render() {
           return '<li>' + f + '</li>';
         }).join('');
 
-        var cdBtn = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar un co-deudor para complementar tu experiencia crediticia</button>' : '';
+        var cdBtn = !SD.tieneCD ? '<button class="btn-cd-suggest" onclick="irCd()">Agregar co-deudor</button>' : '';
 
-        aBox.innerHTML = '<div class="asesor-box"><h4>Tu mejor escenario con el perfil actual</h4><p>Basado en tu información, esta es la propiedad con mayor probabilidad hoy. Para alcanzar una probabilidad más alta, estas acciones concretas marcarían la diferencia:</p><ul class="asesor-actions">' + fHTML + '</ul>' + cdBtn + '<button class="btn-asesor" onclick="irLead()">Habla con un asesor de Perfect House - te ayudamos a preparar tu perfil</button></div>';
+        aBox.innerHTML = '<div class="asesor-box"><h4>Tu mejor escenario con el perfil actual</h4><p>Basado en tu información, esta es la propiedad con mayor probabilidad hoy. Para alcanzar una probabilidad más alta, estas acciones concretas marcarían la diferencia:</p><ul class="asesor-actions">' + fHTML + '</ul>' + cdBtn + '<button class="btn-asesor" onclick="irLead()">Hablar con un asesor</button></div>';
 
         aBox.style.display = 'block';
       } else {
