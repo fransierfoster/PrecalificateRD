@@ -145,6 +145,7 @@ export default async function AdminPage() {
   const calculosE2 = (calculos || []).map((c) => c.score_e2);
   const leadsE1 = (leads || []).map((l) => l.precalifica_calculos?.score_e1);
   const leadsE2 = (leads || []).map((l) => l.precalifica_calculos?.score_e2);
+  const pdfDownloadsCount = (leads || []).filter((l) => l.tipo === 'pdf').length;
 
   const groups: Record<string, Parametro[]> = {};
   (parametros || []).forEach((p) => {
@@ -227,6 +228,13 @@ export default async function AdminPage() {
               </div>
             );
           })}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 240, fontSize: 12, color: '#9CA3AF', flexShrink: 0, paddingLeft: 14 }}>↳ de esas, para descargar el reporte PDF</div>
+            <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 4, height: 14, overflow: 'hidden' }}>
+              <div style={{ width: Math.round((pdfDownloadsCount / maxFunnel) * 100) + '%', height: '100%', background: '#9CA3AF', transition: 'width .3s' }} />
+            </div>
+            <div style={{ width: 36, textAlign: 'right', fontSize: 12, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#374151' }}>{pdfDownloadsCount}</div>
+          </div>
         </div>
       </div>
 
