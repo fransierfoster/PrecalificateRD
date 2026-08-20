@@ -1500,19 +1500,64 @@ var PDF_MODE = false;
 
 function activarModoPDF() {
   trackEvent('click_pdf');
-  PDF_MODE = true;
-  var benv = document.getElementById('benv');
-  if (benv) benv.textContent = '📄 Descargar mi reporte de evaluación';
-  irLead();
+  openPdfModal();
+}
+
+function openPdfModal() {
+  var m = document.getElementById('pdfModal');
+  if (m) m.classList.add('open');
+}
+
+function closePdfModal() {
+  var m = document.getElementById('pdfModal');
+  if (m) m.classList.remove('open');
+  document.getElementById('pdfModalForm').style.display = '';
+  document.getElementById('pdfModalSuccess').style.display = 'none';
+  ['pdfNom', 'pdfApe', 'pdfTel', 'pdfDocNum', 'pdfEmail'].forEach(function (id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('pdfDocTipo').value = '';
+  checkPdfReady();
+}
+
+function checkPdfReady() {
+  var nom = document.getElementById('pdfNom').value.trim();
+  var ape = document.getElementById('pdfApe').value.trim();
+  var tel = document.getElementById('pdfTel').value.trim();
+  var docTipo = document.getElementById('pdfDocTipo').value;
+  var docNum = document.getElementById('pdfDocNum').value.trim();
+  var btn = document.getElementById('pdfDlBtn');
+  btn.disabled = !(nom.length > 1 && ape.length > 1 && tel.length >= 7 && docTipo && docNum.length > 2);
+}
+
+function submitPdfModal() {
+  trackEvent('form_submit');
+  var nom = document.getElementById('pdfNom').value.trim();
+  var ape = document.getElementById('pdfApe').value.trim();
+  var tel = document.getElementById('pdfTel').value.trim();
+  var docTipo = document.getElementById('pdfDocTipo').value;
+  var docNum = document.getElementById('pdfDocNum').value.trim();
+  var email = document.getElementById('pdfEmail').value.trim();
+
+  var cedTxt = (docTipo === 'cedula' ? 'Cédula' : 'Pasaporte') + ': ' + docNum;
+  var ok = generarPDF(nom, ape, cedTxt, tel, email);
+  if (!ok) return;
+
+  var lead = { nombre: nom, apellido: ape, tel: tel, email: email, docTipo: docTipo, docNum: docNum };
+  sendWebhook('contacto', { quiereOfertas: false, tipo: 'pdf' }, lead);
+  actualizarContadorSolicitudes();
+
+  document.getElementById('pdfModalForm').style.display = 'none';
+  document.getElementById('pdfModalSuccess').style.display = 'block';
 }
 
 function generarPDF(nom, ape, cedTxt, tel, email) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert('El generador de PDF aún está cargando. Intenta en unos segundos.');
-    return;
+    return false;
   }
 
-  var btn = document.getElementById('benv');
+  var btn = document.getElementById('pdfDlBtn');
   if (btn) { btn.textContent = 'Generando reporte…'; btn.disabled = true; }
 
   try {
@@ -1612,29 +1657,95 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
     var antCredMap = { menos1: 'Menos de 1 año', '1a3': '1 – 3 años', '3a5': '3 – 5 años', mas5: 'Más de 5 años', nunca: 'Sin historial previo' };
     var tinmMap = { apartamento: 'Apartamento', casa: 'Casa / Villa', solar: 'Solar (terreno)', comercial: 'Propiedad comercial' };
     var paisMap = { DO: 'República Dominicana', US: 'Estados Unidos', PR: 'Puerto Rico', ES: 'España', CA: 'Canadá', PA: 'Panamá', EC: 'Ecuador', SV: 'El Salvador', BS: 'Bahamas', BB: 'Barbados', JM: 'Jamaica', TT: 'Trinidad y Tobago' };
+    var expcMap = { 1: 'RD$500,000 o menos', 2: 'RD$500,000 – RD$1,500,000', 3: 'RD$1,500,000 – RD$3,000,000', 4: 'RD$3,000,000 – RD$6,000,000', 5: 'Más de RD$6,000,000' };
     var tasaTxt = (TDOP * 12 * 100).toFixed(2) + '% anual';
 
-    // I. Perfil del solicitante
-    secHead('I.  PERFIL DEL SOLICITANTE', INK3);
-    doc.autoTable({
-      startY: y,
-      body: [
-        ['Edad', SD.edad + ' años'],
-        ['País de residencia', paisMap[SD.pais] || SD.pais || 'República Dominicana'],
-        ['Actividad económica', empMap[SD.emp] || SD.emp],
-        ['Antigüedad laboral', antMap[SD.ant] || SD.ant],
-        ['Ingreso mensual neto', fmtRD(SD.ingDOP)],
-        ['Cuotas mensuales actuales', fmtRD(SD.deuDOP)],
-        ['Historial de pagos', SD.atraw ? 'Con atrasos registrados' : 'Sin atrasos registrados'],
-        ['Antigüedad crediticia', antCredMap[SD.antCred] || (SD.tuvoPres ? SD.antCred : 'No aplica')],
-      ],
-      theme: 'plain',
-      styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 },
-      alternateRowStyles: { fillColor: BG },
-      columnStyles: { 0: { textColor: INK3, cellWidth: 58 }, 1: { fontStyle: 'bold' } },
-      margin: { left: mL, right: mR_pdf },
-    });
-    y = doc.lastAutoTable.finalY + 8;
+    // I. Perfil del solicitante (+ II. Perfil del co-deudor, lado a lado si aplica)
+    var solRows = [
+      ['Edad', SD.edad + ' años'],
+      ['País de residencia', paisMap[SD.pais] || SD.pais || 'República Dominicana'],
+      ['Actividad económica', empMap[SD.emp] || SD.emp],
+      ['Antigüedad laboral', antMap[SD.ant] || SD.ant],
+      ['Ingreso mensual neto', fmtRD(SD.ingDOP)],
+      ['Historial de pagos', SD.atraw ? 'Con atrasos registrados' : 'Sin atrasos registrados'],
+      ['Antigüedad crediticia', antCredMap[SD.antCred] || (SD.tuvoPres ? SD.antCred : 'No aplica')],
+    ]
+      .concat(SD.tuvoPres ? [['Préstamo previo más alto', expcMap[SD.expc] || '—']] : [])
+      .concat(SD.activos > 0 ? [['Ingresos adicionales', fmtRD(SD.activos * (SD.rIn || 1)) + '/mes']] : []);
+
+    if (SD.tieneCD) {
+      var pColW = 84, pColGap = 6;
+      var pC1 = mL, pC2 = mL + pColW + pColGap;
+      function pColHead(title, color, x) {
+        doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+        doc.setTextColor(color[0], color[1], color[2]);
+        doc.text(title, x, y);
+        doc.setDrawColor(color[0], color[1], color[2]); doc.setLineWidth(0.4);
+        doc.line(x, y + 1.5, x + pColW, y + 1.5);
+        doc.setLineWidth(0.3);
+      }
+      pColHead('I.  PERFIL DEL SOLICITANTE', INK3, pC1);
+      pColHead('II.  PERFIL DEL CO-DEUDOR', RED, pC2);
+      y += 6;
+      var pTabStartY = y;
+
+      var cdRows = [
+        ['Ingreso mensual', fmtRD(SD.ingCDDOP)],
+        ['Actividad económica', empMap[SD.empCD] || SD.empCD || '—'],
+        ['Antigüedad laboral', antMap[SD.antCD] || SD.antCD || '—'],
+        ['País de residencia', paisMap[SD.paisCD] || SD.paisCD || '—'],
+        ['Historial de pagos', SD.atrawCD ? 'Con atrasos' : 'Sin atrasos'],
+        ['Antigüedad crediticia', antCredMap[SD.antCredCD] || 'Sin historial previo'],
+        ['Préstamo previo más alto', expcMap[SD.expcCD] || 'Nunca ha tenido'],
+      ];
+
+      var pTblStyle = { fontSize: 7, cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 };
+
+      doc.autoTable({
+        startY: pTabStartY,
+        body: solRows,
+        theme: 'plain',
+        styles: pTblStyle,
+        alternateRowStyles: { fillColor: BG },
+        columnStyles: { 0: { textColor: INK3, cellWidth: 30 }, 1: { fontStyle: 'bold' } },
+        margin: { left: pC1, right: PW - pC1 - pColW },
+        tableWidth: pColW,
+      });
+      var solFinalY = doc.lastAutoTable.finalY;
+
+      doc.autoTable({
+        startY: pTabStartY,
+        body: cdRows,
+        theme: 'plain',
+        styles: pTblStyle,
+        alternateRowStyles: { fillColor: RED_L },
+        columnStyles: { 0: { textColor: INK3, cellWidth: 30 }, 1: { fontStyle: 'bold' } },
+        margin: { left: pC2, right: PW - pC2 - pColW },
+        tableWidth: pColW,
+      });
+      var cdFinalY = doc.lastAutoTable.finalY;
+
+      y = Math.max(solFinalY, cdFinalY) + 8;
+      if (y > 220) { doc.addPage(); y = 20; }
+    } else {
+      secHead('I.  PERFIL DEL SOLICITANTE', INK3);
+      doc.autoTable({
+        startY: y,
+        body: solRows,
+        theme: 'plain',
+        styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 },
+        alternateRowStyles: { fillColor: BG },
+        columnStyles: { 0: { textColor: INK3, cellWidth: 58 }, 1: { fontStyle: 'bold' } },
+        margin: { left: mL, right: mR_pdf },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+
+    // Numeración romana dinámica: si hay co-deudor, "Perfil" usa I y II, y
+    // todo lo siguiente se corre un puesto. Sin co-deudor, Escenario 1 vuelve
+    // a ser "II" como antes.
+    var pdfRn = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
+    var pdfSecBase = SD.tieneCD ? 3 : 2;
 
     var showE2pdf = !!(SD.e2 && SD.mrDOP > 0 && SD.e2.sc >= 80);
     var e1Sc = SD.e1.sc;
@@ -1644,9 +1755,8 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
 
     var e1Rows = [
       ['Tipo de inmueble', tinmMap[SD.tinm] || 'Propiedad'],
-      ['Valor del inmueble', fmtRD(SD.vinmDOP)],
-      ['≈ en dólares', 'US$' + Math.round(SD.vinmDOP / TC).toLocaleString('en-US')],
-      ['Inicial disponible', fmtRD(SD.iniDOP) + '\n(' + Math.round(SD.iniDOP / (SD.vinmDOP || 1) * 100) + '%)'],
+      ['Valor del inmueble', fmtRD(SD.vinmDOP) + ' / US$' + Math.round(SD.vinmDOP / TC).toLocaleString('en-US')],
+      ['Inicial disponible', fmtRD(SD.iniDOP) + ' (' + Math.round(SD.iniDOP / (SD.vinmDOP || 1) * 100) + '%)'],
       ['Monto a financiar', fmtRD(SD.prDOP)],
       ['Cuota mensual estimada', fmtRD(SD.e1.cDOP)],
       ['Tasa de referencia', tasaTxt],
@@ -1671,17 +1781,16 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
         doc.line(x, y + headH, x + colW, y + headH);
         return headH;
       }
-      var h1 = colHead('II.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED, c1);
-      var h2 = colHead('III.  ESCENARIO 2 — PERFIL ÓPTIMO ACTUAL', GRN, c2);
+      var h1 = colHead(pdfRn[pdfSecBase] + '.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED, c1);
+      var h2 = colHead(pdfRn[pdfSecBase + 1] + '.  ESCENARIO 2 — PERFIL ÓPTIMO ACTUAL', GRN, c2);
       y += Math.max(h1, h2) + 5;
 
       var tabStartY = y;
 
       var e2Rows = [
         ['Tipo de inmueble', tinmMap[SD.tinm] || 'Propiedad'],
-        ['Valor óptimo', fmtRD(SD.virDOP)],
-        ['≈ en dólares', 'US$' + Math.round(SD.virDOP / TC).toLocaleString('en-US')],
-        ['Inicial sugerida', fmtRD(SD.isiDOP) + '\n(' + Math.round(SD.isiDOP / (SD.virDOP || 1) * 100) + '%)'],
+        ['Valor óptimo', fmtRD(SD.virDOP) + ' / US$' + Math.round(SD.virDOP / TC).toLocaleString('en-US')],
+        ['Inicial sugerida', fmtRD(SD.isiDOP) + ' (' + Math.round(SD.isiDOP / (SD.virDOP || 1) * 100) + '%)'],
         ['Monto a financiar', fmtRD(SD.mrDOP)],
         ['Cuota mensual estimada', fmtRD(SD.e2.cDOP)],
         ['Tasa de referencia', tasaTxt],
@@ -1744,7 +1853,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
 
     } else {
       // ── Full-width single scenario ──
-      secHead('II.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED);
+      secHead(pdfRn[pdfSecBase] + '.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED);
       doc.autoTable({
         startY: y,
         body: e1Rows,
@@ -1768,42 +1877,36 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
       y += 14;
     }
 
-    var recLabel = showE2pdf ? 'IV.' : 'III.';
-    if (y > 230) { doc.addPage(); y = 20; }
-    secHead(recLabel + '  RECOMENDACIONES', ORG);
+    var whyLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1)] + '.';
+    if (y > 220) { doc.addPage(); y = 20; }
+    secHead(whyLabel + '  ¿POR QUÉ ESTE RESULTADO?', INK3);
 
-    var recs = [
-      { n: '1', tit: 'Reducir endeudamiento', txt: 'Liquide o reduzca deudas actuales para aumentar su capacidad de pago.' },
-      { n: '2', tit: 'Aumentar el inicial', txt: 'Incrementar el inicial del 20% al 30% reduciría el monto financiado y mejoraría directamente su probabilidad de aprobación.' },
-      { n: '3', tit: 'Agregar un co-deudor', txt: 'Un co-deudor con ingresos verificables puede sumar entre 2% y 5% adicional a la probabilidad combinada.' },
-    ];
+    var why = SD.why || [];
+    var whyColor = { ok: GRN, w: ORG, b: RED };
 
-    doc.setFillColor(ORG_BG[0], ORG_BG[1], ORG_BG[2]);
-    var recStartY = y;
-    var recTotalH = 0;
-    recs.forEach(function(r) {
-      var ls = doc.splitTextToSize(r.txt, cW - 14);
-      recTotalH += ls.length * 4.2 + 10;
+    var whyStartY = y;
+    var whyTotalH = 0;
+    why.forEach(function (it) {
+      var ls = doc.splitTextToSize(it.s, cW - 14);
+      whyTotalH += (ls.length * 3.6) + 8.5;
     });
-    doc.roundedRect(mL, y, cW, recTotalH, 2, 2, 'F');
-    doc.setDrawColor(252, 211, 77); doc.setLineWidth(0.6);
-    doc.line(mL, y, mL, y + recTotalH);
-    y += 4;
+    doc.setFillColor(BG[0], BG[1], BG[2]);
+    doc.roundedRect(mL, y, cW, whyTotalH, 2, 2, 'F');
+    y += 5;
 
-    recs.forEach(function(r) {
-      doc.setFillColor(ORG[0], ORG[1], ORG[2]);
-      doc.circle(mL + 5.5, y + 3, 2.8, 'F');
-      doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
-      doc.text(r.n, mL + 5.5, y + 4, { align: 'center' });
-      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(INK[0], INK[1], INK[2]);
-      doc.text(r.tit, mL + 11, y + 3.5);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(INK2[0], INK2[1], INK2[2]);
-      var ls = doc.splitTextToSize(r.txt, cW - 14);
-      doc.text(ls, mL + 11, y + 7.5);
-      y += ls.length * 4.2 + 10;
+    why.forEach(function (it) {
+      var col = whyColor[it.t] || INK3;
+      doc.setFillColor(col[0], col[1], col[2]);
+      doc.circle(mL + 5.5, y + 1.6, 2, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(col[0], col[1], col[2]);
+      doc.text(it.x, mL + 11, y + 2.3);
+      doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
+      var ls = doc.splitTextToSize(it.s, cW - 14);
+      doc.text(ls, mL + 11, y + 6);
+      y += (ls.length * 3.6) + 8.5;
     });
 
-    y = recStartY + recTotalH + 8;
+    y = whyStartY + whyTotalH + 8;
     if (y > 260) { doc.addPage(); y = 20; }
     doc.setDrawColor(RULE[0], RULE[1], RULE[2]); doc.setLineWidth(0.3);
     doc.line(mL, y, PW - mR_pdf, y); y += 6;
@@ -1826,12 +1929,14 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
 
     var fileName = 'reporte-hipotecario-' + nom.toLowerCase().replace(/\s+/g, '-') + '.pdf';
     doc.save(fileName);
+    return true;
 
   } catch (err) {
     console.error('PDF error:', err);
     alert('Ocurrió un error generando el PDF. Intenta nuevamente.');
+    return false;
   } finally {
-    if (btn) { btn.textContent = '📄 Descargar mi reporte de evaluación'; btn.disabled = false; }
+    if (btn) { btn.textContent = '📄 Descargar mi reporte'; btn.disabled = false; }
   }
 }
 
