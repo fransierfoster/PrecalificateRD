@@ -256,6 +256,19 @@ footer strong{color:var(--red);}
 .btn-share{flex:1;display:block;border:1.5px solid #25D366;border-radius:8px;padding:10px 16px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:#25D366;background:transparent;transition:background .15s,color .15s;}
 .btn-share:hover{background:#25D366;color:#fff;}
 
+/* ── Multi-banco: tarjetas de comparación por entidad ── */
+#bancos-wrap{margin-bottom:8px;}
+.bank-card{background:var(--sur);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
+.bank-card.sel{border-color:var(--red);border-width:2px;}
+.bank-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.bank-card .mono{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Sora',sans-serif;font-weight:800;font-size:11px;flex-shrink:0;overflow:hidden;}
+.bank-card .mono img{width:100%;height:100%;object-fit:contain;background:#fff;}
+.bank-name{font-family:'Sora',sans-serif;font-size:14px;font-weight:800;color:var(--tx);}
+.bank-card .radiobtn{width:20px;height:20px;border-radius:50%;border:2px solid var(--bdr);flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center;}
+.bank-card.sel .radiobtn{border-color:var(--red);}
+.bank-card .radiobtn i{width:10px;height:10px;border-radius:50%;background:var(--red);display:block;opacity:0;}
+.bank-card.sel .radiobtn i{opacity:1;}
+
 /* ── PDF download modal ── */
 .pdf-mbox{position:relative;}
 .pdf-mclose{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:var(--su2);border:none;color:var(--tx2);font-size:13px;cursor:pointer;line-height:26px;text-align:center;}

@@ -489,7 +489,64 @@ function anim(rid, pid, sc, col) {
   }, 18);
 }
 
+// ── MULTI-BANCO ──────────────────────────────────────────────────────────────
+// SD.bancos trae un resultado completo (e1/e2/why/sims/cp) por cada banco
+// activo. selectBanco() sustituye esos campos en SD por los del banco elegido
+// y vuelve a llamar render(): todo lo que ya existe (Escenario 2, slider,
+// PDF, formulario) sigue funcionando igual, solo que con los datos de ese
+// banco. Ver la nota en app/api/calcular/route.ts.
+function selectBanco(id) {
+  if (!SD.bancos) return;
+  var b = null;
+  for (var i = 0; i < SD.bancos.length; i++) {
+    if (SD.bancos[i].id === id) { b = SD.bancos[i]; break; }
+  }
+  if (!b) return;
+
+  SD.bancoSelId = id;
+  SD.bancoTasa = b.tasaInteres;
+  SD.e1 = b.e1; SD.e2 = b.e2; SD.why = b.why; SD.sims = b.sims; SD.cp = b.cp;
+  SD.prDOP = b.prDOP; SD.virDOP = b.virDOP; SD.mrDOP = b.mrDOP; SD.isiDOP = b.isiDOP;
+  SD.e2Reached = b.e2Reached; SD.e2NoViable = b.e2NoViable; SD.virDOPMin = b.virDOPMin;
+
+  render();
+}
+
+function renderBancos() {
+  var wrap = document.getElementById('bancos-wrap');
+  if (!wrap) return;
+  if (!SD.bancos || SD.bancos.length < 2) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+
+  var circ = 138.2;
+  var cards = SD.bancos.map(function (b) {
+    var bd = bdg(b.e1.sc);
+    var off = (circ * (1 - b.e1.sc / 100)).toFixed(1);
+    var sel = (b.id === SD.bancoSelId);
+    var logoHtml = b.logoUrl
+      ? '<img src="' + b.logoUrl + '" alt="' + b.nombre + '">'
+      : (b.iniciales || b.nombre.slice(0, 3).toUpperCase());
+    return '<div class="bank-card' + (sel ? ' sel' : '') + '" onclick="selectBanco(\'' + b.id + '\')">' +
+      '<div class="bank-head">' +
+        '<div class="mono" style="background:' + (b.color || '#1D3A8A') + '">' + logoHtml + '</div>' +
+        '<div class="bank-name">' + b.nombre + '</div>' +
+        '<div class="radiobtn"><i></i></div>' +
+      '</div>' +
+      '<div class="smini">' +
+        '<div class="smring"><svg viewBox="0 0 48 48"><circle class="srbg" cx="24" cy="24" r="22"/><circle class="srfi" cx="24" cy="24" r="22" style="stroke:' + bd.k + ';stroke-dashoffset:' + off + '"/></svg><div class="srcen"><span class="srpct" style="color:' + bd.k + '">' + b.e1.sc + '%</span></div></div>' +
+        '<div><div class="sbdg ' + bd.c + '">' + bd.t + '</div><div class="smsg">Cuota estimada: ' + fmt(b.e1.cDOP) + '/mes</div></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  wrap.style.display = 'block';
+  wrap.innerHTML =
+    '<div class="elbl" style="color:var(--tx2);">🏦 Resultados por entidad bancaria</div>' +
+    '<div class="ssub">Elige la entidad que prefieras — el resto de tu evaluación se ajusta a ese banco.</div>' +
+    cards;
+}
+
 function render() {
+  renderBancos();
   var e1 = SD.e1, e2 = SD.e2, why = SD.why, sims = SD.sims, cp = SD.cp;
   var th = TH();
 
@@ -937,7 +994,7 @@ function updSl() {
         ingDOP: SD.ingDOP, deuDOP: SD.deuDOP, ingCDDOP: SD.ingCDDOP, deuCDDOP: SD.deuCDDOP,
         expcCD: SD.expcCD, antCredCD: SD.antCredCD || 'nunca', prodsCD: SD.prodsCD || ['ninguno'],
         atrawCD: SD.atrawCD, atpatCD: SD.atpatCD, empCD: SD.empCD, antCD: SD.antCD, paisCD: SD.paisCD,
-        vinmDOP: vinmDOP, iniDOP: niDOP, mr: MR, sliderOnly: true
+        vinmDOP: vinmDOP, iniDOP: niDOP, mr: MR, sliderOnly: true, bancoId: SD.bancoSelId || null
       })
     }).then(function (r) { return r.json(); }).then(function (res) {
       document.getElementById('slcu').textContent = fmt(res.cDOP || 0);
@@ -1291,10 +1348,20 @@ function calc() {
       expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
       atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
       e2Reached: res.e2Reached, rIn: rIn, mp: mp, virDOPMin: res.virDOPMin, e2NoViable: res.e2NoViable,
-      tinm: document.getElementById('tinm').value
+      tinm: document.getElementById('tinm').value,
+      bancos: (res.bancos && res.bancos.length > 1) ? res.bancos : null,
+      bancoSelId: null, bancoTasa: null
     };
 
-    render();
+    if (SD.bancos) {
+      var _best = 0;
+      for (var _bi = 1; _bi < SD.bancos.length; _bi++) {
+        if (SD.bancos[_bi].e1.sc > SD.bancos[_best].e1.sc) _best = _bi;
+      }
+      selectBanco(SD.bancos[_best].id);
+    } else {
+      render();
+    }
   }).catch(function (err) {
     console.error('Error al calcular:', err);
     if (bcalc) bcalc.disabled = false;

@@ -570,7 +570,7 @@ export async function POST(req: NextRequest) {
       ingDOP, deuDOP, ingCDDOP, deuCDDOP,
       expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD,
       vinmDOP, iniDOP, mr,
-      sliderOnly,
+      sliderOnly, bancoId,
     } = body;
 
     const flatMap = await loadFlatParams();
@@ -585,8 +585,18 @@ export async function POST(req: NextRequest) {
     const ingTot   = ingDOP + ingCDDOP;
     const activosDOP = activos || 0;
 
-    // Para el slider solo necesitamos sc y cDOP
+    // Para el slider solo necesitamos sc y cDOP. Si el cliente tiene un banco
+    // seleccionado (multi-banco), usamos sus parámetros y su tasa propia.
     if (sliderOnly) {
+      let pSlider = p, tmSlider = tm;
+      if (bancoId && process.env.VERCEL_ENV !== 'production') {
+        const bancosDisp = await loadBancosActivos(flatMap);
+        const banco = bancosDisp.find((b) => b.id === bancoId);
+        if (banco) {
+          pSlider = banco.params;
+          tmSlider = mr === 'USD' ? tusd : (banco.tasa_interes / 100 / 12);
+        }
+      }
       const e1 = scoreFn(
         prDOP, iniDOP, ingTot, deuDOP, deuCDDOP,
         pais, emp, ant, expc, antCred, prods,
@@ -594,7 +604,7 @@ export async function POST(req: NextRequest) {
         tieneCD, ingCDDOP, ingDOP,
         expcCD, antCredCD, prodsCD,
         atrawCD, atpatCD, empCD, antCD, paisCD,
-        tuvoPres, p, tm, tc,
+        tuvoPres, pSlider, tmSlider, tc,
       );
       return NextResponse.json({ sc: e1.sc, cDOP: e1.cDOP });
     }
