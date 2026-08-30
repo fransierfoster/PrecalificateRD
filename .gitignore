@@ -7,3 +7,5 @@ _extract
 
 .vercel
 tsconfig.tsbuildinfo
+
+.env*
