@@ -535,10 +535,10 @@ function anim(rid, pid, sc, col) {
 // y vuelve a llamar render(): todo lo que ya existe (Escenario 2, slider,
 // PDF, formulario) sigue funcionando igual, solo que con los datos de ese
 // banco. Ver la nota en app/api/calcular/route.ts.
-function selectedBancoNombre() {
-  if (!SD.bancos || !SD.bancoSelId) return null;
+function bancoPorId(id) {
+  if (!SD.bancos || !id) return null;
   for (var i = 0; i < SD.bancos.length; i++) {
-    if (SD.bancos[i].id === SD.bancoSelId) return SD.bancos[i].nombre;
+    if (SD.bancos[i].id === id) return SD.bancos[i];
   }
   return null;
 }
@@ -879,13 +879,17 @@ function render() {
     var _e2sc = (showE2 && SD.e2 && SD.e2.sc != null) ? SD.e2.sc : 0;
     var _scAd = Math.max(e1.sc || 0, _e2sc);
     var _montoAd = (_e2sc >= (e1.sc || 0) && SD.virDOP) ? SD.virDOP : (SD.vinmDOP || 0);
-    var _bancoNom = selectedBancoNombre();
+    // El banco a mostrar en el popup depende de si el resultado viene del
+    // Escenario 1 (banco elegido arriba) o del Escenario 2 (su propio mejor
+    // banco, que puede ser otro). Si multibanco no esta activo, bancoPorId
+    // siempre devuelve null y el popup simplemente no muestra logo/nombre.
+    var _bancoPopup = _isE2Lead ? bancoPorId(SD.bancoE2Id) : bancoPorId(SD.bancoSelId);
 
     if (_scLead >= 70 || _scAd >= 70) {
       _popupShownForCalc = true;
       _popupTimer = setTimeout(function () {
         var ad = (_scAd >= 70) ? getAdParaScore(_scAd, _montoAd) : null;
-        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70) { showLeadPopup(_scLead, _isE2Lead, _bancoNom); }
+        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70) { showLeadPopup(_scLead, _isE2Lead, _bancoPopup); }
       }, 2500);
     }
   }
@@ -966,7 +970,7 @@ function irLeadAnuncio() {
   irLead();
 }
 
-function showLeadPopup(sc, isE2, bancoNombre) {
+function showLeadPopup(sc, isE2, banco) {
   if (!POPUP_ACTIVO) return;
   if (ANUNCIOS_ACTIVOS.length > 0) return;
   var color, badge, title, sub, body;
@@ -990,8 +994,6 @@ function showLeadPopup(sc, isE2, bancoNombre) {
     body = 'Con este perfil ya puedes explorar opciones reales. Un asesor puede ayudarte a presentarte ante la entidad correcta y aumentar tus probabilidades.';
   }
 
-  if (bancoNombre) body += ' Tu mayor probabilidad hoy es con ' + bancoNombre + '.';
-
   var p = document.getElementById('lead-popup');
   var head = document.getElementById('lead-popup-head');
   var circle = document.getElementById('lead-popup-circle');
@@ -1006,6 +1008,29 @@ function showLeadPopup(sc, isE2, bancoNombre) {
   head.style.background = color;
   circle.style.border = '3px solid rgba(255,255,255,0.5)';
   cta.style.background = color;
+
+  // Tag "oferta automática" -- solo aplica al Escenario 2, sea o no
+  // multibanco (esa propiedad la calculamos nosotros, no la pidió el cliente).
+  var autoTag = document.getElementById('lead-popup-auto-tag');
+  if (autoTag) autoTag.style.display = isE2 ? 'inline-flex' : 'none';
+
+  // Logo/nombre del banco -- solo si multibanco esta activo y hay un banco
+  // real que mostrar (bancoPorId devuelve null si no, asi que esto nunca se
+  // muestra ni se rompe cuando multibanco esta apagado).
+  var bankRow = document.getElementById('lead-popup-bank');
+  if (bankRow) {
+    if (banco) {
+      var logoEl = document.getElementById('lead-popup-bank-logo');
+      logoEl.style.background = banco.color || '#1D3A8A';
+      logoEl.innerHTML = banco.logoUrl
+        ? '<img src="' + banco.logoUrl + '" alt="' + banco.nombre + '" style="width:100%;height:100%;object-fit:contain;background:#fff;">'
+        : (banco.iniciales || banco.nombre.slice(0, 3).toUpperCase());
+      document.getElementById('lead-popup-bank-name').textContent = banco.nombre;
+      bankRow.style.display = 'flex';
+    } else {
+      bankRow.style.display = 'none';
+    }
+  }
 
   p.style.display = 'flex';
 }
