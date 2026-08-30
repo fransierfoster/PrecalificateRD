@@ -7,7 +7,7 @@ const DC = ['US','PR','CA','PA','EC','SV','BS','BB','AG','GD','KN','LC','VC','TT
 var SNMS = ['', 'Perfil Personal', 'Situación Financiera', 'Inmueble y Capital'];
 
 let SD = {};
-var MR = 'DOP', TOK = false, COK = false, PRESVAL = null, ATVAL = null, CDATVAL = null, _popupTimer = null;
+var MR = 'DOP', TOK = false, COK = false, PRESVAL = null, ATVAL = null, CDATVAL = null, _popupTimer = null, _popupShownForCalc = false;
 
 // ── MODO PRUEBA ──
 // ?test=1 en la URL activa el modo prueba (no guarda cálculos/leads/eventos
@@ -535,6 +535,14 @@ function anim(rid, pid, sc, col) {
 // y vuelve a llamar render(): todo lo que ya existe (Escenario 2, slider,
 // PDF, formulario) sigue funcionando igual, solo que con los datos de ese
 // banco. Ver la nota en app/api/calcular/route.ts.
+function selectedBancoNombre() {
+  if (!SD.bancos || !SD.bancoSelId) return null;
+  for (var i = 0; i < SD.bancos.length; i++) {
+    if (SD.bancos[i].id === SD.bancoSelId) return SD.bancos[i].nombre;
+  }
+  return null;
+}
+
 function selectBanco(id) {
   if (!SD.bancos) return;
   var b = null;
@@ -798,20 +806,27 @@ function render() {
     }
   }, 150);
 
-  clearTimeout(_popupTimer);
-  var _scLead = e1.sc;
-  var _isE2Lead = false;
-  if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _scLead = SD.e2.sc; _isE2Lead = true; }
+  // El popup solo se arma una vez por calculo (con el banco de mayor
+  // probabilidad, que es el que queda seleccionado por defecto). Cambiar de
+  // banco despues vuelve a llamar render() pero no debe reabrir el popup.
+  if (!_popupShownForCalc) {
+    clearTimeout(_popupTimer);
+    var _scLead = e1.sc;
+    var _isE2Lead = false;
+    if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _scLead = SD.e2.sc; _isE2Lead = true; }
 
-  var _e2sc = (showE2 && SD.e2 && SD.e2.sc != null) ? SD.e2.sc : 0;
-  var _scAd = Math.max(e1.sc || 0, _e2sc);
-  var _montoAd = (_e2sc >= (e1.sc || 0) && SD.virDOP) ? SD.virDOP : (SD.vinmDOP || 0);
+    var _e2sc = (showE2 && SD.e2 && SD.e2.sc != null) ? SD.e2.sc : 0;
+    var _scAd = Math.max(e1.sc || 0, _e2sc);
+    var _montoAd = (_e2sc >= (e1.sc || 0) && SD.virDOP) ? SD.virDOP : (SD.vinmDOP || 0);
+    var _bancoNom = selectedBancoNombre();
 
-  if (_scLead >= 70 || _scAd >= 70) {
-    _popupTimer = setTimeout(function () {
-      var ad = (_scAd >= 70) ? getAdParaScore(_scAd, _montoAd) : null;
-      if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70) { showLeadPopup(_scLead, _isE2Lead); }
-    }, 2500);
+    if (_scLead >= 70 || _scAd >= 70) {
+      _popupShownForCalc = true;
+      _popupTimer = setTimeout(function () {
+        var ad = (_scAd >= 70) ? getAdParaScore(_scAd, _montoAd) : null;
+        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70) { showLeadPopup(_scLead, _isE2Lead, _bancoNom); }
+      }, 2500);
+    }
   }
 }
 
@@ -890,7 +905,7 @@ function irLeadAnuncio() {
   irLead();
 }
 
-function showLeadPopup(sc, isE2) {
+function showLeadPopup(sc, isE2, bancoNombre) {
   if (!POPUP_ACTIVO) return;
   if (ANUNCIOS_ACTIVOS.length > 0) return;
   var color, badge, title, sub, body;
@@ -913,6 +928,8 @@ function showLeadPopup(sc, isE2) {
     sub = 'Varias entidades podrían aprobarte hoy';
     body = 'Con este perfil ya puedes explorar opciones reales. Un asesor puede ayudarte a presentarte ante la entidad correcta y aumentar tus probabilidades.';
   }
+
+  if (bancoNombre) body += ' Tu mayor probabilidad hoy es con ' + bancoNombre + '.';
 
   var p = document.getElementById('lead-popup');
   var head = document.getElementById('lead-popup-head');
@@ -1159,6 +1176,7 @@ function reinit() {
 
   setM('DOP');
   SD = {};
+  _popupShownForCalc = false;
   var pdfSecR = document.getElementById('pdf-section');
   if (pdfSecR) pdfSecR.style.display = 'none';
   showS(1);
@@ -1392,6 +1410,8 @@ function calc() {
       bancos: (res.bancos && res.bancos.length > 1) ? res.bancos : null,
       bancoSelId: null, bancoTasa: null
     };
+
+    _popupShownForCalc = false;
 
     if (SD.bancos) {
       var _best = 0;
@@ -2014,6 +2034,33 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
     });
 
     y = whyStartY + whyTotalH + 8;
+
+    if (SD.bancos && SD.bancos.length > 1) {
+      if (y > 230) { doc.addPage(); y = 20; }
+      var bancosLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1) + 1] + '.';
+      secHead(bancosLabel + '  RESULTADOS POR ENTIDAD BANCARIA', INK3);
+
+      var bancosOrdenados = SD.bancos.slice().sort(function (a, b) { return b.e1.sc - a.e1.sc; });
+      var bancosRows = bancosOrdenados.map(function (b) {
+        return [b.nombre + (b.id === SD.bancoSelId ? ' ✓' : ''), b.e1.sc + '%', fmtRD(b.e1.cDOP) + '/mes'];
+      });
+
+      doc.autoTable({
+        startY: y,
+        head: [['Entidad', 'Probabilidad', 'Cuota mensual estimada']],
+        body: bancosRows,
+        theme: 'plain',
+        styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 },
+        headStyles: { textColor: INK3, fontStyle: 'bold', fontSize: 7 },
+        alternateRowStyles: { fillColor: BG },
+        margin: { left: mL, right: mR_pdf },
+      });
+      y = doc.lastAutoTable.finalY + 4;
+      doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
+      doc.text('✓ Entidad seleccionada en tu evaluación. Comparativo orientativo — los criterios reales de cada entidad pueden variar.', mL, y);
+      y += 9;
+    }
+
     if (y > 260) { doc.addPage(); y = 20; }
     doc.setDrawColor(RULE[0], RULE[1], RULE[2]); doc.setLineWidth(0.3);
     doc.line(mL, y, PW - mR_pdf, y); y += 6;
