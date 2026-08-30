@@ -1965,7 +1965,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
     // Numeración romana dinámica: si hay co-deudor, "Perfil" usa I y II, y
     // todo lo siguiente se corre un puesto. Sin co-deudor, Escenario 1 vuelve
     // a ser "II" como antes.
-    var pdfRn = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
+    var pdfRn = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
     var pdfSecBase = SD.tieneCD ? 3 : 2;
 
     var e1Sc = SD.e1.sc;
@@ -2111,24 +2111,16 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
 
     // Comparativo por entidad bancaria -- va justo debajo de los escenarios,
     // como continuacion directa de la evaluacion (no despues del "por que").
-    // Es un ranking neutral por probabilidad: no marca ninguna entidad como
-    // "seleccionada" (esa nocion solo existe en la sesion web, no tiene
-    // sentido en un documento descargado).
-    var bancosPresent = !!(SD.bancos && SD.bancos.length > 1);
-    if (bancosPresent) {
-      if (y > 225) { doc.addPage(); y = 20; }
-      var bancosLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1)] + '.';
-      secHead(bancosLabel + '  RESULTADOS POR ENTIDAD BANCARIA', INK3);
-
-      var bancosOrdenados = SD.bancos.slice().sort(function (a, b) { return b.e1.sc - a.e1.sc; });
-      var bancosRows = bancosOrdenados.map(function (b) {
-        return [b.nombre, b.e1.sc + '%', fmtRD(b.e1.cDOP) + '/mes'];
-      });
-
+    // Un ranking por escenario: no marca ninguna entidad como "seleccionada"
+    // (esa nocion solo existe en la sesion web, no tiene sentido en un
+    // documento descargado). Se separa en dos tablas -- Escenario 1 y
+    // Escenario 2 -- porque el banco con mayor probabilidad puede no ser el
+    // mismo en cada uno.
+    function tablaBancos(rows, nota) {
       doc.autoTable({
         startY: y,
         head: [['Entidad', 'Probabilidad', 'Cuota mensual estimada']],
-        body: bancosRows,
+        body: rows,
         theme: 'plain',
         styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 },
         headStyles: { textColor: INK3, fontStyle: 'bold', fontSize: 7 },
@@ -2145,11 +2137,36 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
       });
       y = doc.lastAutoTable.finalY + 4;
       doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
-      doc.text('Comparativo orientativo, ordenado de mayor a menor probabilidad. Los criterios reales de cada entidad pueden variar.', mL, y);
+      doc.text(nota, mL, y);
       y += 9;
     }
 
-    var whyLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1) + (bancosPresent ? 1 : 0)] + '.';
+    var bancosE1Present = !!(SD.bancos && SD.bancos.length > 1);
+    if (bancosE1Present) {
+      if (y > 210) { doc.addPage(); y = 20; }
+      var bancosE1Label = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1)] + '.';
+      secHead(bancosE1Label + '  RESULTADOS POR ENTIDAD BANCARIA — ESCENARIO 1', INK3);
+      var bancosE1Ordenados = SD.bancos.slice().sort(function (a, b) { return b.e1.sc - a.e1.sc; });
+      tablaBancos(
+        bancosE1Ordenados.map(function (b) { return [b.nombre, b.e1.sc + '%', fmtRD(b.e1.cDOP) + '/mes']; }),
+        'Comparativo orientativo para la propiedad solicitada, ordenado de mayor a menor probabilidad. Los criterios reales de cada entidad pueden variar.'
+      );
+    }
+
+    var bancosE2Viables = (SD.bancos || []).filter(function (b) { return !b.e2NoViable && b.e2; });
+    var bancosE2Present = showE2pdf && bancosE2Viables.length > 1;
+    if (bancosE2Present) {
+      if (y > 210) { doc.addPage(); y = 20; }
+      var bancosE2Label = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1) + (bancosE1Present ? 1 : 0)] + '.';
+      secHead(bancosE2Label + '  RESULTADOS POR ENTIDAD BANCARIA — ESCENARIO 2', INK3);
+      var bancosE2Ordenados = bancosE2Viables.slice().sort(function (a, b) { return b.e2.sc - a.e2.sc; });
+      tablaBancos(
+        bancosE2Ordenados.map(function (b) { return [b.nombre, b.e2.sc + '%', fmtRD(b.e2.cDOP) + '/mes']; }),
+        'Comparativo orientativo para la propiedad de menor valor sugerida en el Escenario 2, ordenado de mayor a menor probabilidad.'
+      );
+    }
+
+    var whyLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1) + (bancosE1Present ? 1 : 0) + (bancosE2Present ? 1 : 0)] + '.';
     if (y > 220) { doc.addPage(); y = 20; }
     secHead(whyLabel + '  ¿POR QUÉ ESTE RESULTADO?', INK3);
 
