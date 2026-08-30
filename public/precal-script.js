@@ -560,37 +560,32 @@ function selectBanco(id) {
   render();
 }
 
+// Chips de bancos en grilla de 2 columnas, dentro del propio Escenario 1
+// (justo antes del anillo). Cualquier banco nuevo que se active entra a la
+// grilla automaticamente -- CSS grid acomoda 2 por fila y baja el resto,
+// nunca se recortan ni obligan a hacer scroll horizontal.
 function renderBancos() {
-  var wrap = document.getElementById('bancos-wrap');
+  var wrap = document.getElementById('bank-chips-row');
   if (!wrap) return;
   if (!SD.bancos || SD.bancos.length < 2) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
 
-  var circ = 138.2;
-  var cards = SD.bancos.map(function (b) {
+  var ordenados = SD.bancos.slice().sort(function (a, b) { return b.e1.sc - a.e1.sc; });
+
+  var chips = ordenados.map(function (b, i) {
     var bd = bdg(b.e1.sc);
-    var off = (circ * (1 - b.e1.sc / 100)).toFixed(1);
     var sel = (b.id === SD.bancoSelId);
     var logoHtml = b.logoUrl
       ? '<img src="' + b.logoUrl + '" alt="' + b.nombre + '">'
       : (b.iniciales || b.nombre.slice(0, 3).toUpperCase());
-    return '<div class="bank-card' + (sel ? ' sel' : '') + '" onclick="selectBanco(\'' + b.id + '\')">' +
-      '<div class="bank-head">' +
-        '<div class="mono" style="background:' + (b.color || '#1D3A8A') + '">' + logoHtml + '</div>' +
-        '<div class="bank-name">' + b.nombre + '</div>' +
-        '<div class="radiobtn"><i></i></div>' +
-      '</div>' +
-      '<div class="smini">' +
-        '<div class="smring"><svg viewBox="0 0 48 48"><circle class="srbg" cx="24" cy="24" r="22"/><circle class="srfi" cx="24" cy="24" r="22" style="stroke:' + bd.k + ';stroke-dashoffset:' + off + '"/></svg><div class="srcen"><span class="srpct" style="color:' + bd.k + '">' + b.e1.sc + '%</span></div></div>' +
-        '<div><div class="sbdg ' + bd.c + '">' + bd.t + '</div><div class="smsg">Cuota estimada: ' + fmt(b.e1.cDOP) + '/mes</div></div>' +
-      '</div>' +
+    return '<div class="bank-chip' + (sel ? ' sel' : '') + '" onclick="selectBanco(\'' + b.id + '\')">' +
+      '<div class="mono" style="background:' + (b.color || '#1D3A8A') + '">' + logoHtml + '</div>' +
+      '<div class="info"><span class="nm">' + b.nombre + (i === 0 ? ' 🏆' : '') + '</span><span class="pct" style="color:' + bd.k + '">' + b.e1.sc + '%</span></div>' +
+      '<div class="check">✓</div>' +
     '</div>';
   }).join('');
 
   wrap.style.display = 'block';
-  wrap.innerHTML =
-    '<div class="elbl" style="color:var(--tx2);">🏦 Resultados por entidad bancaria</div>' +
-    '<div class="ssub">Elige la entidad que prefieras — el resto de tu evaluación se ajusta a ese banco.</div>' +
-    cards;
+  wrap.innerHTML = '<div class="bank-row">' + chips + '</div>';
 }
 
 function render() {

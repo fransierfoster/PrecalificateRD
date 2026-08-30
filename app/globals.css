@@ -256,18 +256,21 @@ footer strong{color:var(--red);}
 .btn-share{flex:1;display:block;border:1.5px solid #25D366;border-radius:8px;padding:10px 16px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:#25D366;background:transparent;transition:background .15s,color .15s;}
 .btn-share:hover{background:#25D366;color:#fff;}
 
-/* ── Multi-banco: tarjetas de comparación por entidad ── */
-#bancos-wrap{margin-bottom:8px;}
-.bank-card{background:var(--sur);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
-.bank-card.sel{border-color:var(--red);border-width:2px;}
-.bank-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.bank-card .mono{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Sora',sans-serif;font-weight:800;font-size:11px;flex-shrink:0;overflow:hidden;}
-.bank-card .mono img{width:100%;height:100%;object-fit:contain;background:#fff;}
-.bank-name{font-family:'Sora',sans-serif;font-size:14px;font-weight:800;color:var(--tx);}
-.bank-card .radiobtn{width:20px;height:20px;border-radius:50%;border:2px solid var(--bdr);flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center;}
-.bank-card.sel .radiobtn{border-color:var(--red);}
-.bank-card .radiobtn i{width:10px;height:10px;border-radius:50%;background:var(--red);display:block;opacity:0;}
-.bank-card.sel .radiobtn i{opacity:1;}
+/* ── Multi-banco: selector de bancos en grilla, dentro de Escenario 1 ── */
+/* Grid de 2 columnas: si un banco no cabe en la fila, baja a la siguiente en
+   vez de recortarse o forzar scroll horizontal. Con 3 bancos queda 2+1; con
+   4, 2+2; cualquier banco nuevo que se active entra solo a la grilla. */
+#bank-chips-row{margin-bottom:9px;}
+.bank-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.bank-chip{display:flex;align-items:center;gap:7px;background:var(--su2);border:1.5px solid var(--bdr);border-radius:50px;padding:6px 10px 6px 6px;cursor:pointer;transition:all .15s;min-width:0;}
+.bank-chip.sel{border-color:var(--red);background:rgba(192,22,28,.06);}
+.bank-chip .mono{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Sora',sans-serif;font-weight:800;font-size:9px;flex-shrink:0;overflow:hidden;}
+.bank-chip .mono img{width:100%;height:100%;object-fit:contain;background:#fff;}
+.bank-chip .info{display:flex;flex-direction:column;line-height:1.15;min-width:0;}
+.bank-chip .nm{font-size:10.5px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bank-chip .pct{font-size:12px;font-weight:800;font-family:'Sora',sans-serif;}
+.bank-chip .check{width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;display:none;align-items:center;justify-content:center;font-size:8px;margin-left:auto;flex-shrink:0;}
+.bank-chip.sel .check{display:flex;}
 
 /* ── PDF download modal ── */
 .pdf-mbox{position:relative;}
