@@ -260,7 +260,7 @@ footer strong{color:var(--red);}
 /* Grid de 2 columnas: si un banco no cabe en la fila, baja a la siguiente en
    vez de recortarse o forzar scroll horizontal. Con 3 bancos queda 2+1; con
    4, 2+2; cualquier banco nuevo que se active entra solo a la grilla. */
-#bank-chips-row{margin-bottom:9px;}
+#bank-chips-row, #bank-chips-row-e2{margin-bottom:9px;}
 .bank-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .bank-chip{display:flex;align-items:center;gap:7px;background:var(--su2);border:1.5px solid var(--bdr);border-radius:50px;padding:6px 10px 6px 6px;cursor:pointer;transition:all .15s;min-width:0;}
 .bank-chip.sel{border-color:var(--red);background:rgba(192,22,28,.06);}

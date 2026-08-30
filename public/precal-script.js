@@ -559,6 +559,9 @@ function mejorBancoE2() {
   return best;
 }
 
+// El Escenario 1 (banco a comparar) y el Escenario 2 (mejor banco a precio
+// reducido) son selecciones independientes -- elegir un banco distinto para
+// uno no toca al otro. Cada uno recuerda el suyo (bancoSelId / bancoE2Id).
 function selectBanco(id) {
   if (!SD.bancos) return;
   var b = null;
@@ -573,12 +576,22 @@ function selectBanco(id) {
   SD.e1 = b.e1; SD.why = b.why; SD.sims = b.sims; SD.cp = b.cp;
   SD.prDOP = b.prDOP;
 
-  var e2Banco = mejorBancoE2() || b;
-  SD.e2 = e2Banco.e2;
-  SD.virDOP = e2Banco.virDOP; SD.mrDOP = e2Banco.mrDOP; SD.isiDOP = e2Banco.isiDOP;
-  SD.e2Reached = e2Banco.e2Reached; SD.e2NoViable = e2Banco.e2NoViable; SD.virDOPMin = e2Banco.virDOPMin;
-  SD.bancoE2Id = e2Banco.id;
-  SD.bancoE2Nombre = e2Banco.nombre;
+  render();
+}
+
+function selectBancoE2(id) {
+  if (!SD.bancos) return;
+  var b = null;
+  for (var i = 0; i < SD.bancos.length; i++) {
+    if (SD.bancos[i].id === id) { b = SD.bancos[i]; break; }
+  }
+  if (!b) return;
+
+  SD.e2 = b.e2;
+  SD.virDOP = b.virDOP; SD.mrDOP = b.mrDOP; SD.isiDOP = b.isiDOP;
+  SD.e2Reached = b.e2Reached; SD.e2NoViable = b.e2NoViable; SD.virDOPMin = b.virDOPMin;
+  SD.bancoE2Id = id;
+  SD.bancoE2Nombre = b.nombre;
 
   render();
 }
@@ -611,8 +624,37 @@ function renderBancos() {
   wrap.innerHTML = '<div class="bank-row">' + chips + '</div>';
 }
 
+// Mismo patron que renderBancos(), pero para el Escenario 2: solo incluye
+// bancos con alternativa viable a precio reducido (e2NoViable=false) y
+// ordena por su propio score de Escenario 2, no el de Escenario 1.
+function renderBancosE2() {
+  var wrap = document.getElementById('bank-chips-row-e2');
+  if (!wrap) return;
+  var viables = (SD.bancos || []).filter(function (b) { return !b.e2NoViable && b.e2; });
+  if (viables.length < 2) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+
+  var ordenados = viables.slice().sort(function (a, b) { return b.e2.sc - a.e2.sc; });
+
+  var chips = ordenados.map(function (b, i) {
+    var bd = bdg(b.e2.sc);
+    var sel = (b.id === SD.bancoE2Id);
+    var logoHtml = b.logoUrl
+      ? '<img src="' + b.logoUrl + '" alt="' + b.nombre + '">'
+      : (b.iniciales || b.nombre.slice(0, 3).toUpperCase());
+    return '<div class="bank-chip' + (sel ? ' sel' : '') + '" onclick="selectBancoE2(\'' + b.id + '\')">' +
+      '<div class="mono" style="background:' + (b.color || '#1D3A8A') + '">' + logoHtml + '</div>' +
+      '<div class="info"><span class="nm">' + b.nombre + (i === 0 ? ' 🏆' : '') + '</span><span class="pct" style="color:' + bd.k + '">' + b.e2.sc + '%</span></div>' +
+      '<div class="check">✓</div>' +
+    '</div>';
+  }).join('');
+
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<div class="bank-row">' + chips + '</div>';
+}
+
 function render() {
   renderBancos();
+  renderBancosE2();
   var e1 = SD.e1, e2 = SD.e2, why = SD.why, sims = SD.sims, cp = SD.cp;
   var th = TH();
 
@@ -1438,6 +1480,8 @@ function calc() {
       for (var _bi = 1; _bi < SD.bancos.length; _bi++) {
         if (SD.bancos[_bi].e1.sc > SD.bancos[_best].e1.sc) _best = _bi;
       }
+      var _bestE2 = mejorBancoE2() || SD.bancos[_best];
+      selectBancoE2(_bestE2.id);
       selectBanco(SD.bancos[_best].id);
     } else {
       render();
