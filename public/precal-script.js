@@ -543,6 +543,22 @@ function selectedBancoNombre() {
   return null;
 }
 
+// El Escenario 2 (precio reducido) no tiene por que convenirle al mismo
+// banco que el Escenario 1 -- cada entidad pondera distinto a un precio mas
+// bajo. Por eso se busca de forma independiente cual banco da la mayor
+// probabilidad para ESE escenario, entre los que tengan una alternativa
+// viable (e2NoViable=false).
+function mejorBancoE2() {
+  if (!SD.bancos) return null;
+  var best = null;
+  for (var i = 0; i < SD.bancos.length; i++) {
+    var b = SD.bancos[i];
+    if (b.e2NoViable || !b.e2) continue;
+    if (!best || b.e2.sc > best.e2.sc) best = b;
+  }
+  return best;
+}
+
 function selectBanco(id) {
   if (!SD.bancos) return;
   var b = null;
@@ -552,10 +568,17 @@ function selectBanco(id) {
   if (!b) return;
 
   SD.bancoSelId = id;
+  SD.bancoSelNombre = b.nombre;
   SD.bancoTasa = b.tasaInteres;
-  SD.e1 = b.e1; SD.e2 = b.e2; SD.why = b.why; SD.sims = b.sims; SD.cp = b.cp;
-  SD.prDOP = b.prDOP; SD.virDOP = b.virDOP; SD.mrDOP = b.mrDOP; SD.isiDOP = b.isiDOP;
-  SD.e2Reached = b.e2Reached; SD.e2NoViable = b.e2NoViable; SD.virDOPMin = b.virDOPMin;
+  SD.e1 = b.e1; SD.why = b.why; SD.sims = b.sims; SD.cp = b.cp;
+  SD.prDOP = b.prDOP;
+
+  var e2Banco = mejorBancoE2() || b;
+  SD.e2 = e2Banco.e2;
+  SD.virDOP = e2Banco.virDOP; SD.mrDOP = e2Banco.mrDOP; SD.isiDOP = e2Banco.isiDOP;
+  SD.e2Reached = e2Banco.e2Reached; SD.e2NoViable = e2Banco.e2NoViable; SD.virDOPMin = e2Banco.virDOPMin;
+  SD.bancoE2Id = e2Banco.id;
+  SD.bancoE2Nombre = e2Banco.nombre;
 
   render();
 }
@@ -689,7 +712,8 @@ function render() {
       aBox.style.display = 'block';
     } else {
       e2box.style.display = '';
-      e2lbl.textContent = '✅ Escenario 2 — Tu mejor opción con el inicial que tienes disponible';
+      e2lbl.textContent = '✅ Escenario 2 — Tu mejor opción con el inicial que tienes disponible'
+        + (SD.bancoE2Nombre ? ' (con ' + SD.bancoE2Nombre + ')' : '');
       e2lbl.style.color = '#059669';
 
       document.getElementById('e2p').textContent = fmt(SD.virDOP);
@@ -1200,7 +1224,8 @@ function compartir() {
   var showE2 = e1.sc < 80;
   var e2Insuficiente = !SD.e2 || SD.mrDOP <= 0 || SD.e2.sc < 80;
   if (showE2 && !e2Insuficiente) {
-    txt += '\n✅ Escenario 2 — Tu mejor opción con el inicial que tienes disponible\n';
+    txt += '\n✅ Escenario 2 — Tu mejor opción con el inicial que tienes disponible'
+      + (SD.bancoE2Nombre ? ' (con ' + SD.bancoE2Nombre + ')' : '') + '\n';
     txt += '💰 Propiedad sugerida: ' + fmt(SD.virDOP) + '\n';
     txt += '🏦 Monto a financiar: ' + fmt(SD.mrDOP) + '\n';
     txt += '📊 Probabilidad de aprobación: ' + SD.e2.sc + '% (' + nivelTxt(SD.e2.sc) + ')\n';
@@ -1912,8 +1937,10 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
         doc.line(x, y + headH, x + colW, y + headH);
         return headH;
       }
-      var h1 = colHead(pdfRn[pdfSecBase] + '.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED, c1);
-      var h2 = colHead(pdfRn[pdfSecBase + 1] + '.  ESCENARIO 2 — PERFIL ÓPTIMO ACTUAL', e2Col, c2);
+      var e1TitleSuffix = SD.bancoSelNombre ? ' (' + SD.bancoSelNombre + ')' : '';
+      var e2TitleSuffix = SD.bancoE2Nombre ? ' (' + SD.bancoE2Nombre + ')' : '';
+      var h1 = colHead(pdfRn[pdfSecBase] + '.  ESCENARIO 1 — PROPIEDAD SOLICITADA' + e1TitleSuffix, RED, c1);
+      var h2 = colHead(pdfRn[pdfSecBase + 1] + '.  ESCENARIO 2 — PERFIL ÓPTIMO ACTUAL' + e2TitleSuffix, e2Col, c2);
       y += Math.max(h1, h2) + 5;
 
       var tabStartY = y;
@@ -1984,7 +2011,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
 
     } else {
       // ── Full-width single scenario ──
-      secHead(pdfRn[pdfSecBase] + '.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED);
+      secHead(pdfRn[pdfSecBase] + '.  ESCENARIO 1 — PROPIEDAD SOLICITADA' + (SD.bancoSelNombre ? ' (' + SD.bancoSelNombre + ')' : ''), RED);
       doc.autoTable({
         startY: y,
         body: e1Rows,
