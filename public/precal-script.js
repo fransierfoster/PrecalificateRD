@@ -1734,7 +1734,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
     doc.setTextColor(ORG[0], ORG[1], ORG[2]);
     doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
     doc.text('REPORTE DE EVALUACIÓN HIPOTECARIA PRELIMINAR — DOCUMENTO REFERENCIAL', PW / 2, y + 4.8, { align: 'center' });
-    y = 35 + 4;
+    y = 35 + 9;
 
     // ── Recipient ──
     doc.setTextColor(INK[0], INK[1], INK[2]);
@@ -1869,11 +1869,20 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
     var pdfRn = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
     var pdfSecBase = SD.tieneCD ? 3 : 2;
 
-    var showE2pdf = !!(SD.e2 && SD.mrDOP > 0 && SD.e2.sc >= 80);
     var e1Sc = SD.e1.sc;
     var e1Col = e1Sc >= 80 ? GRN : e1Sc >= 70 ? [180, 100, 0] : RED;
     var e1Lbl = e1Sc >= 80 ? 'Alta Probabilidad' : e1Sc >= 70 ? 'Probabilidad Moderada' : 'Probabilidad Baja';
     var e1Verdict = e1Sc >= 80 ? 'Perfil viable con entidades financieras' : e1Sc >= 70 ? 'Requiere algunos ajustes' : 'Requiere ajustes en el perfil';
+
+    // Antes solo se mostraba el Escenario 2 en el PDF si llegaba a 80%. Ahora,
+    // cuando el Escenario 1 no calificó bien (menor a 80%), se muestra igual
+    // la probabilidad real del Escenario 2 -- aunque tampoco llegue a 80% --
+    // en vez de ocultarlo por completo.
+    var showE2pdf = !!(SD.e2 && SD.mrDOP > 0 && e1Sc < 80);
+    var e2Sc = SD.e2 ? SD.e2.sc : 0;
+    var e2Col = e2Sc >= 80 ? GRN : e2Sc >= 70 ? [180, 100, 0] : RED;
+    var e2Lbl = e2Sc >= 80 ? 'Alta Probabilidad' : e2Sc >= 70 ? 'Probabilidad Moderada' : 'Probabilidad Baja';
+    var e2Verdict = e2Sc >= 80 ? 'Perfil viable con entidades financieras' : e2Sc >= 70 ? 'Requiere algunos ajustes' : 'Requiere ajustes en el perfil';
 
     var e1Rows = [
       ['Tipo de inmueble', tinmMap[SD.tinm] || 'Propiedad'],
@@ -1904,7 +1913,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
         return headH;
       }
       var h1 = colHead(pdfRn[pdfSecBase] + '.  ESCENARIO 1 — PROPIEDAD SOLICITADA', RED, c1);
-      var h2 = colHead(pdfRn[pdfSecBase + 1] + '.  ESCENARIO 2 — PERFIL ÓPTIMO ACTUAL', GRN, c2);
+      var h2 = colHead(pdfRn[pdfSecBase + 1] + '.  ESCENARIO 2 — PERFIL ÓPTIMO ACTUAL', e2Col, c2);
       y += Math.max(h1, h2) + 5;
 
       var tabStartY = y;
@@ -1961,7 +1970,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
         doc.text(sc + '%', x + w - 3, y + 10, { align: 'right' });
       }
       drawPill(c1, colW, (e1Sc >= 80 ? GRN_L : RED_L), e1Sc, e1Lbl, e1Verdict, e1Col);
-      drawPill(c2, colW, GRN_L, SD.e2.sc, 'Alta Probabilidad', 'Perfil viable con entidades financieras', GRN);
+      drawPill(c2, colW, (e2Sc >= 80 ? GRN_L : RED_L), e2Sc, e2Lbl, e2Verdict, e2Col);
 
       y += pillH + 3;
 
@@ -1969,8 +1978,8 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
       doc.setFontSize(7); doc.setFont('helvetica', 'bold');
       doc.setTextColor(e1Col[0], e1Col[1], e1Col[2]);
       doc.text(e1Verdict, c1 + 3, y);
-      doc.setTextColor(GRN[0], GRN[1], GRN[2]);
-      doc.text('Perfil viable con entidades financieras', c2 + 3, y);
+      doc.setTextColor(e2Col[0], e2Col[1], e2Col[2]);
+      doc.text(e2Verdict, c2 + 3, y);
       y += 8;
 
     } else {
