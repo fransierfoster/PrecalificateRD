@@ -1,6 +1,7 @@
 ﻿var TC = 60, TDOP = 0.1193 / 12, TUSD = 0.0850 / 12;
 var PRECIO_MIN_USD = 40000;
 var POPUP_ACTIVO = true;
+var POPUP_SOLO_E2 = false;
 
 const DC = ['US','PR','CA','PA','EC','SV','BS','BB','AG','GD','KN','LC','VC','TT','BZ','GY','JM'];
 
@@ -889,7 +890,10 @@ function render() {
       _popupShownForCalc = true;
       _popupTimer = setTimeout(function () {
         var ad = (_scAd >= 70) ? getAdParaScore(_scAd, _montoAd) : null;
-        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70) { showLeadPopup(_scLead, _isE2Lead, _bancoPopup); }
+        // POPUP_SOLO_E2 (opcion del admin): el popup de lead solo se muestra
+        // si el resultado que lo dispara viene del Escenario 2 -- no afecta
+        // al popup de anuncios, que tiene su propia logica de score_minimo.
+        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70 && (!POPUP_SOLO_E2 || _isE2Lead)) { showLeadPopup(_scLead, _isE2Lead, _bancoPopup); }
       }, 2500);
     }
   }
@@ -1470,6 +1474,7 @@ function calc() {
     if (res.virDOPMin) PRECIO_MIN_USD = Math.round(res.virDOPMin / TC);
 
     POPUP_ACTIVO = res.popupActivo !== false;
+    POPUP_SOLO_E2 = res.popupSoloE2 === true;
     applyUIParams(res.contadorVisible !== false);
 
     sendWebhook('calculo', {
@@ -2219,6 +2224,7 @@ function initPrecal() {
 
   fetch('/api/ui-params').then(function(r) { return r.json(); }).then(function(d) {
     POPUP_ACTIVO = d.popupActivo !== false;
+    POPUP_SOLO_E2 = d.popupSoloE2 === true;
     applyUIParams(d.contadorVisible !== false);
   }).catch(function() {});
 

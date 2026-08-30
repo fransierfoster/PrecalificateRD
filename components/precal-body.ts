@@ -163,7 +163,7 @@ export const PRECAL_BODY_HTML = `<div class="thbar"><span class="thlbl" id="thlb
       <button onclick="closeLeadPopup()" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
       <div id="lead-popup-badge" style="display:inline-block;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;margin-bottom:10px;background:rgba(255,255,255,.2);color:#fff;"></div>
       <p id="lead-popup-title" style="color:#fff;font-size:16px;font-weight:600;margin:0;line-height:1.35;"></p>
-      <div id="lead-popup-auto-tag" style="display:none;align-items:center;gap:4px;background:rgba(255,255,255,.18);color:#fff;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;margin:8px auto 0;width:fit-content;">💡 Preparamos esta oferta automáticamente para ti</div>
+      <div id="lead-popup-auto-tag" style="display:none;align-items:center;gap:4px;background:rgba(255,255,255,.18);color:#fff;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;margin:8px auto 0;width:fit-content;">💡 Preparamos esta oferta para ti</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;">
         <div id="lead-popup-circle" style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
           <span id="lead-popup-score" style="color:#fff;font-size:24px;font-weight:700;line-height:1;"></span>

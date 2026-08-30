@@ -12,7 +12,7 @@ export async function GET() {
     const { data } = await supabase
       .from('precalifica_parametros')
       .select('clave, valor')
-      .in('clave', ['ui_popup_activo', 'ui_contador_visible']);
+      .in('clave', ['ui_popup_activo', 'ui_contador_visible', 'ui_popup_solo_e2']);
 
     const map: Record<string, number> = {};
     (data || []).forEach((r: { clave: string; valor: number }) => {
@@ -22,8 +22,9 @@ export async function GET() {
     return NextResponse.json({
       popupActivo: map['ui_popup_activo'] !== 0,
       contadorVisible: map['ui_contador_visible'] !== 0,
+      popupSoloE2: map['ui_popup_solo_e2'] === 1,
     });
   } catch {
-    return NextResponse.json({ popupActivo: true, contadorVisible: true });
+    return NextResponse.json({ popupActivo: true, contadorVisible: true, popupSoloE2: false });
   }
 }

@@ -32,7 +32,7 @@ interface Params {
   act: typeof DEF_ACT;
   edad: typeof DEF_EDAD;
   fin: { tasaDOP: number; tasaUSD: number; tc: number; precioMinE2Usd: number };
-  ui: { popupActivo: boolean; contadorVisible: boolean; multibancoActivo: boolean };
+  ui: { popupActivo: boolean; contadorVisible: boolean; multibancoActivo: boolean; popupSoloE2: boolean };
 }
 
 interface ScoreResult {
@@ -95,6 +95,7 @@ function buildParamsFromMap(m: Record<string, number>): Params {
       popupActivo: m.ui_popup_activo === 1,
       contadorVisible: m.ui_contador_visible === 1,
       multibancoActivo: m.ui_multibanco_activo === 1,
+      popupSoloE2: m.ui_popup_solo_e2 === 1,
     },
   };
 }
@@ -105,7 +106,7 @@ function defaultParams(): Params {
     exp: DEF_EXP, ing: DEF_ING, est: DEF_EST, pais: DEF_PAIS,
     act: DEF_ACT, edad: DEF_EDAD,
     fin: { tasaDOP: DEF_TDOP * 12, tasaUSD: DEF_TUSD * 12, tc: DEF_TC, precioMinE2Usd: 40000 },
-    ui: { popupActivo: true, contadorVisible: true, multibancoActivo: false },
+    ui: { popupActivo: true, contadorVisible: true, multibancoActivo: false, popupSoloE2: false },
   };
 }
 
@@ -646,6 +647,7 @@ export async function POST(req: NextRequest) {
       tc, tdop, tusd,
       popupActivo: p.ui.popupActivo,
       contadorVisible: p.ui.contadorVisible,
+      popupSoloE2: p.ui.popupSoloE2,
       bancos,
     });
   } catch (err) {

@@ -172,6 +172,7 @@ export default async function AdminPage() {
 
   const uiPopup = uiParams.find((p) => p.clave === 'ui_popup_activo');
   const uiContador = uiParams.find((p) => p.clave === 'ui_contador_visible');
+  const uiPopupSoloE2 = uiParams.find((p) => p.clave === 'ui_popup_solo_e2');
 
   const { data: anuncios } = await supabase
     .from('precalifica_anuncios')
@@ -335,6 +336,14 @@ export default async function AdminPage() {
               valor={uiPopup.valor}
               label="Popup de captación de leads"
               description="Ventana flotante que aparece 2.5s después del resultado cuando el score ≥ 70%"
+            />
+          )}
+          {uiPopupSoloE2 && (
+            <ToggleParamForm
+              clave={uiPopupSoloE2.clave}
+              valor={uiPopupSoloE2.valor}
+              label="Popup solo para resultados del Escenario 2"
+              description="Si está activo, el popup de arriba solo aparece cuando el resultado que califica viene del Escenario 2 (la oferta que armamos automáticamente), no del Escenario 1"
             />
           )}
           {uiContador && (
