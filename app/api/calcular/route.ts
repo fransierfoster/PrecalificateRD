@@ -32,7 +32,7 @@ interface Params {
   act: typeof DEF_ACT;
   edad: typeof DEF_EDAD;
   fin: { tasaDOP: number; tasaUSD: number; tc: number; precioMinE2Usd: number };
-  ui: { popupActivo: boolean; contadorVisible: boolean };
+  ui: { popupActivo: boolean; contadorVisible: boolean; multibancoActivo: boolean };
 }
 
 interface ScoreResult {
@@ -42,8 +42,75 @@ interface ScoreResult {
   ingEff: number; dTot: number; atraw: number; atpat: string;
 }
 
+type WhyItem = { t: string; x: string; s: string };
+type SimItem = { l: string; d: number; b: number };
+
+interface CalcInput {
+  edad: number; pais: string; emp: string; ant: string; tuvoPres: boolean;
+  expc: number; antCred: string; prods: string[];
+  atraw: number; atpat: string; tieneCD: boolean; activos: number;
+  ingDOP: number; deuDOP: number; ingCDDOP: number; deuCDDOP: number;
+  expcCD: number; antCredCD: string; prodsCD: string[];
+  atrawCD: number; atpatCD: string; empCD: string; antCD: string; paisCD: string;
+  vinmDOP: number; iniDOP: number; mr: string;
+}
+
+interface FullResult {
+  e1: ScoreResult; e2: ScoreResult; why: WhyItem[]; sims: SimItem[];
+  cp: { c: string; t: string };
+  virDOP: number; mrDOP: number; isiDOP: number; prDOP: number;
+  e2Reached: boolean; e2NoViable: boolean; virDOPMin: number;
+}
+
+// ── PARÁMETROS: mapa plano (Supabase) → objeto Params anidado ───────────────
+function buildParamsFromMap(m: Record<string, number>): Params {
+  return {
+    pesos: {
+      dti: m.peso_dti / 100, mora: m.peso_mora / 100, exp: m.peso_exp / 100,
+      ltv: m.peso_ltv / 100, ing: m.peso_ing / 100, est: m.peso_est / 100,
+      pais: m.peso_pais / 100, act: m.peso_act / 100, edad: m.peso_edad / 100,
+    },
+    dti: { p100: m.dti_p100, p95: m.dti_p95, p85: m.dti_p85, p72: m.dti_p72, p45: m.dti_p45, p20: m.dti_p20, p5: m.dti_p5 },
+    ltv: { p100: m.ltv_p100, p95: m.ltv_p95, p88: m.ltv_p88, p80: m.ltv_p80, p73: m.ltv_p73, p65: m.ltv_p65, p52: m.ltv_p52, p40: m.ltv_p40, p22: m.ltv_p22, p5: m.ltv_p5 },
+    mora: {
+      sinAtrasos: m.mora_sin_atrasos,
+      a30Aislado: m.mora_30_aislado, a30Recurrente: m.mora_30_recurrente,
+      a3160Aislado: m.mora_3160_aislado, a3160Recurrente: m.mora_3160_recurrente,
+      a60Aislado: m.mora_60_aislado, a60Recurrente: m.mora_60_recurrente,
+      topeRec: m.mora_tope_recurrente, topeRecCD: m.mora_tope_recurrente_cd,
+    },
+    exp: {
+      antNunca: m.exp_ant_nunca, antMenos1: m.exp_ant_menos1, ant1a3: m.exp_ant_1a3, ant3a5: m.exp_ant_3a5, antMas5: m.exp_ant_mas5,
+      prodNinguno: m.exp_prod_ninguno, prodTarjeta: m.exp_prod_tarjeta, prodPersonal: m.exp_prod_personal,
+      prodVehiculo: m.exp_prod_vehiculo, prodHipoteca: m.exp_prod_hipoteca, prodCombo: m.exp_prod_combo,
+      gap0: m.exp_monto_gap0, gap1: m.exp_monto_gap1, gap2: m.exp_monto_gap2, gap3: m.exp_monto_gap3, gap4: m.exp_monto_gap4,
+    },
+    ing: { mas200k: m.ing_mas200k, r120_200k: m.ing_120_200k, r80_120k: m.ing_80_120k, r50_80k: m.ing_50_80k, r30_50k: m.ing_30_50k, menos30k: m.ing_menos30k },
+    est: { formal: m.est_formal, empresario: m.est_empresario, remesa: m.est_remesa, independiente: m.est_independiente, pension: m.est_pension, antMenos1: m.est_ant_menos1, ant1a2: m.est_ant_1a2, ant2a5: m.est_ant_2a5, antMas5: m.est_ant_mas5 },
+    pais: { DO: m.pais_do, US: m.pais_us, PR: m.pais_pr, CA: m.pais_ca, ES: m.pais_es, otro: m.pais_otro },
+    act: { noDeclara: m.act_no_declara, menos10: m.act_menos10, r10_30: m.act_10_30, mas30: m.act_mas30 },
+    edad: { e18_24: m.edad_18_24, e25_45: m.edad_25_45, e46_55: m.edad_46_55, e56_60: m.edad_56_60, mas60: m.edad_mas60 },
+    fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio, precioMinE2Usd: m.fin_precio_min_e2_usd },
+    ui: {
+      popupActivo: m.ui_popup_activo === 1,
+      contadorVisible: m.ui_contador_visible === 1,
+      multibancoActivo: m.ui_multibanco_activo === 1,
+    },
+  };
+}
+
+function defaultParams(): Params {
+  return {
+    pesos: DEF_PESOS, dti: DEF_DTI, ltv: DEF_LTV, mora: DEF_MORA,
+    exp: DEF_EXP, ing: DEF_ING, est: DEF_EST, pais: DEF_PAIS,
+    act: DEF_ACT, edad: DEF_EDAD,
+    fin: { tasaDOP: DEF_TDOP * 12, tasaUSD: DEF_TUSD * 12, tc: DEF_TC, precioMinE2Usd: 40000 },
+    ui: { popupActivo: true, contadorVisible: true, multibancoActivo: false },
+  };
+}
+
 // ── CARGA PARÁMETROS DESDE SUPABASE ─────────────────────────────────────────
-async function loadParams(): Promise<Params> {
+async function loadFlatParams(): Promise<Record<string, number> | null> {
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -57,47 +124,53 @@ async function loadParams(): Promise<Params> {
 
     const m: Record<string, number> = {};
     rows.forEach((r: { clave: string; valor: number }) => { m[r.clave] = r.valor; });
-
-    return {
-      pesos: {
-        dti: m.peso_dti / 100, mora: m.peso_mora / 100, exp: m.peso_exp / 100,
-        ltv: m.peso_ltv / 100, ing: m.peso_ing / 100, est: m.peso_est / 100,
-        pais: m.peso_pais / 100, act: m.peso_act / 100, edad: m.peso_edad / 100,
-      },
-      dti: { p100: m.dti_p100, p95: m.dti_p95, p85: m.dti_p85, p72: m.dti_p72, p45: m.dti_p45, p20: m.dti_p20, p5: m.dti_p5 },
-      ltv: { p100: m.ltv_p100, p95: m.ltv_p95, p88: m.ltv_p88, p80: m.ltv_p80, p73: m.ltv_p73, p65: m.ltv_p65, p52: m.ltv_p52, p40: m.ltv_p40, p22: m.ltv_p22, p5: m.ltv_p5 },
-      mora: {
-        sinAtrasos: m.mora_sin_atrasos,
-        a30Aislado: m.mora_30_aislado, a30Recurrente: m.mora_30_recurrente,
-        a3160Aislado: m.mora_3160_aislado, a3160Recurrente: m.mora_3160_recurrente,
-        a60Aislado: m.mora_60_aislado, a60Recurrente: m.mora_60_recurrente,
-        topeRec: m.mora_tope_recurrente, topeRecCD: m.mora_tope_recurrente_cd,
-      },
-      exp: {
-        antNunca: m.exp_ant_nunca, antMenos1: m.exp_ant_menos1, ant1a3: m.exp_ant_1a3, ant3a5: m.exp_ant_3a5, antMas5: m.exp_ant_mas5,
-        prodNinguno: m.exp_prod_ninguno, prodTarjeta: m.exp_prod_tarjeta, prodPersonal: m.exp_prod_personal,
-        prodVehiculo: m.exp_prod_vehiculo, prodHipoteca: m.exp_prod_hipoteca, prodCombo: m.exp_prod_combo,
-        gap0: m.exp_monto_gap0, gap1: m.exp_monto_gap1, gap2: m.exp_monto_gap2, gap3: m.exp_monto_gap3, gap4: m.exp_monto_gap4,
-      },
-      ing: { mas200k: m.ing_mas200k, r120_200k: m.ing_120_200k, r80_120k: m.ing_80_120k, r50_80k: m.ing_50_80k, r30_50k: m.ing_30_50k, menos30k: m.ing_menos30k },
-      est: { formal: m.est_formal, empresario: m.est_empresario, remesa: m.est_remesa, independiente: m.est_independiente, pension: m.est_pension, antMenos1: m.est_ant_menos1, ant1a2: m.est_ant_1a2, ant2a5: m.est_ant_2a5, antMas5: m.est_ant_mas5 },
-      pais: { DO: m.pais_do, US: m.pais_us, PR: m.pais_pr, CA: m.pais_ca, ES: m.pais_es, otro: m.pais_otro },
-      act: { noDeclara: m.act_no_declara, menos10: m.act_menos10, r10_30: m.act_10_30, mas30: m.act_mas30 },
-      edad: { e18_24: m.edad_18_24, e25_45: m.edad_25_45, e46_55: m.edad_46_55, e56_60: m.edad_56_60, mas60: m.edad_mas60 },
-      fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio, precioMinE2Usd: m.fin_precio_min_e2_usd },
-      ui: {
-        popupActivo: m.ui_popup_activo === 1,
-        contadorVisible: m.ui_contador_visible === 1,
-      },
-    };
+    return m;
   } catch {
-    return {
-      pesos: DEF_PESOS, dti: DEF_DTI, ltv: DEF_LTV, mora: DEF_MORA,
-      exp: DEF_EXP, ing: DEF_ING, est: DEF_EST, pais: DEF_PAIS,
-      act: DEF_ACT, edad: DEF_EDAD,
-      fin: { tasaDOP: DEF_TDOP * 12, tasaUSD: DEF_TUSD * 12, tc: DEF_TC, precioMinE2Usd: 40000 },
-      ui: { popupActivo: true, contadorVisible: true },
-    };
+    return null;
+  }
+}
+
+async function loadParams(): Promise<Params> {
+  const m = await loadFlatParams();
+  return m ? buildParamsFromMap(m) : defaultParams();
+}
+
+// ── BANCOS (preview — ver nota en POST) ─────────────────────────────────────
+interface BancoActivo {
+  id: string; slug: string; nombre: string; color: string;
+  iniciales: string; logo_url: string | null; tasa_interes: number;
+  params: Params;
+}
+
+async function loadBancosActivos(globalFlatMap: Record<string, number> | null): Promise<BancoActivo[]> {
+  if (!globalFlatMap) return [];
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    const { data: bancos } = await supabase
+      .from('precalifica_bancos')
+      .select('id, slug, nombre, color, iniciales, logo_url, tasa_interes')
+      .eq('activo', true)
+      .order('orden');
+
+    if (!bancos || bancos.length === 0) return [];
+
+    const { data: overrides } = await supabase
+      .from('precalifica_bancos_parametros')
+      .select('banco_id, clave, valor')
+      .in('banco_id', bancos.map((b) => b.id));
+
+    return bancos.map((b) => {
+      const m = { ...globalFlatMap };
+      (overrides || [])
+        .filter((o: { banco_id: string; clave: string; valor: number }) => o.banco_id === b.id)
+        .forEach((o: { banco_id: string; clave: string; valor: number }) => { m[o.clave] = Number(o.valor); });
+      return { ...b, params: buildParamsFromMap(m) };
+    });
+  } catch {
+    return [];
   }
 }
 
@@ -281,8 +354,6 @@ function scoreFn(
 }
 
 // ── BUILD WHY ────────────────────────────────────────────────────────────────
-type WhyItem = { t: string; x: string; s: string };
-
 function buildWhy(e: ScoreResult, antCred: string, tuvoPres: boolean, activos: number, _pais: string, _edad: number): WhyItem[] {
   const w: WhyItem[] = [];
   const dtiPct = Math.round(e.dti * 100);
@@ -329,8 +400,6 @@ function buildWhy(e: ScoreResult, antCred: string, tuvoPres: boolean, activos: n
 }
 
 // ── BUILD SIMS ───────────────────────────────────────────────────────────────
-type SimItem = { l: string; d: number; b: number };
-
 function buildSims(
   e1: ScoreResult, prDOP: number, iniDOP: number, ingTot: number,
   deuDOP: number, deuCDDOP: number, tieneCD: boolean,
@@ -395,6 +464,101 @@ function credPerfil(pExpTit: number, pAt: number, antCred: string, tuvoPres: boo
   return { c: 'cp-d', t: '△ Perfil crediticio: Sin historial' };
 }
 
+// ── CÁLCULO COMPLETO (E1 + E2 + why + sims + cp) para un set de parámetros ──
+// Extraído para poder reutilizarlo tal cual con los parámetros de cada banco.
+function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullResult {
+  const {
+    edad, pais, emp, ant, tuvoPres, expc, antCred, prods,
+    atraw, atpat, tieneCD, activos,
+    ingDOP, deuDOP, ingCDDOP, deuCDDOP,
+    expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD,
+    vinmDOP, iniDOP,
+  } = input;
+
+  const prDOP = Math.max(0, vinmDOP - iniDOP);
+  const ingTot = ingDOP + ingCDDOP;
+  const activosDOP = activos || 0;
+
+  const e1 = scoreFn(
+    prDOP, iniDOP, ingTot, deuDOP, deuCDDOP,
+    pais, emp, ant, expc, antCred, prods,
+    atraw, atpat, activosDOP, edad,
+    tieneCD, ingCDDOP, ingDOP,
+    expcCD, antCredCD, prodsCD,
+    atrawCD, atpatCD, empCD, antCD, paisCD,
+    tuvoPres, p, tm, tc,
+  );
+
+  // ── E2 ───────────────────────────────────────────────────────────────────
+  const ingEffTotal = ingTot + activosDOP;
+  const deuExist    = deuDOP + deuCDDOP;
+  const precioMinE2Usd = p.fin.precioMinE2Usd || 40000;
+  const virDOPMin = Math.round(precioMinE2Usd * tc / 10000) * 10000;
+  const e2NoViable = virDOPMin >= prDOP;
+
+  let e2: ScoreResult = { sc: 0, cDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
+  let mrDOP = 0, virDOP = 0, isiDOP = iniDOP;
+
+  if (!e2NoViable) {
+    for (let pct = 0.95; pct >= 0.30; pct = Math.round((pct - 0.05) * 100) / 100) {
+      let vir2 = Math.round(vinmDOP * pct / 10000) * 10000;
+      if (vir2 < virDOPMin) vir2 = virDOPMin;
+      if (vir2 >= vinmDOP) continue;
+      const mr2 = Math.max(0, vir2 - iniDOP);
+      if (mr2 <= 0) break;
+      const e2t = scoreFn(mr2, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc);
+      if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = iniDOP; e2 = e2t; }
+      if (e2.sc >= 80) break;
+    }
+  }
+
+  if (e2.sc < 80) {
+    const cmaxHip = Math.max(0, ingEffTotal * 0.33 - deuExist);
+    mrDOP = cmaxHip > 0 ? Math.round((cmaxHip * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000 : 0;
+    if (mrDOP >= prDOP) mrDOP = Math.max(0, prDOP - 100000);
+
+    virDOP = mrDOP > 0 ? Math.round(mrDOP / 0.80 / 10000) * 10000 : 0;
+    if (virDOP > 0 && virDOP < virDOPMin) virDOP = virDOPMin;
+    const isiMin = virDOP > 0 ? Math.round(virDOP * 0.20 / 10000) * 10000 : 0;
+    isiDOP = Math.min(iniDOP, virDOP > 0 ? virDOP * 0.80 : 0);
+    if (isiDOP < isiMin) isiDOP = isiMin;
+    if (virDOP > 0) mrDOP = Math.max(0, virDOP - isiDOP);
+
+    e2 = (!e2NoViable && mrDOP > 0)
+      ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc)
+      : { sc: 0, cDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
+
+    if (!e2NoViable) {
+      const ratios = [0.30, 0.28, 0.25];
+      for (let ri = 0; ri < ratios.length && e2.sc < 85; ri++) {
+        const cap2 = ingEffTotal * ratios[ri] - deuExist;
+        if (cap2 > 0) {
+          let mr2 = Math.round((Math.max(0, cap2) * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000;
+          if (mr2 > 0 && mr2 < prDOP) {
+            let vir2 = Math.round(mr2 / 0.80 / 10000) * 10000;
+            if (vir2 < virDOPMin) vir2 = virDOPMin;
+            if (vir2 < prDOP) {
+              const isi2min = Math.round(vir2 * 0.20 / 10000) * 10000;
+              let isi2 = Math.min(iniDOP, vir2 * 0.80);
+              if (isi2 < isi2min) isi2 = isi2min;
+              mr2 = Math.max(0, vir2 - isi2);
+              const e2t = scoreFn(mr2, isi2, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc);
+              if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = isi2; e2 = e2t; }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const e2Reached = e2.sc >= 85;
+  const why = buildWhy(e1, antCred, tuvoPres, activosDOP, pais, edad);
+  const sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activosDOP, p, tm, tc);
+  const cp = credPerfil(e1.pExpTit, e1.pAt, antCred, tuvoPres);
+
+  return { e1, e2, why, sims, cp, virDOP, mrDOP, isiDOP, prDOP, e2Reached, e2NoViable, virDOPMin };
+}
+
 // ── HANDLER ──────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -409,7 +573,8 @@ export async function POST(req: NextRequest) {
       sliderOnly,
     } = body;
 
-    const p = await loadParams();
+    const flatMap = await loadFlatParams();
+    const p = flatMap ? buildParamsFromMap(flatMap) : defaultParams();
 
     const tc   = p.fin.tc   || DEF_TC;
     const tdop = p.fin.tasaDOP / 12 || DEF_TDOP;
@@ -420,95 +585,58 @@ export async function POST(req: NextRequest) {
     const ingTot   = ingDOP + ingCDDOP;
     const activosDOP = activos || 0;
 
-    const e1 = scoreFn(
-      prDOP, iniDOP, ingTot, deuDOP, deuCDDOP,
-      pais, emp, ant, expc, antCred, prods,
-      atraw, atpat, activosDOP, edad,
-      tieneCD, ingCDDOP, ingDOP,
-      expcCD, antCredCD, prodsCD,
-      atrawCD, atpatCD, empCD, antCD, paisCD,
-      tuvoPres, p, tm, tc,
-    );
-
     // Para el slider solo necesitamos sc y cDOP
     if (sliderOnly) {
+      const e1 = scoreFn(
+        prDOP, iniDOP, ingTot, deuDOP, deuCDDOP,
+        pais, emp, ant, expc, antCred, prods,
+        atraw, atpat, activosDOP, edad,
+        tieneCD, ingCDDOP, ingDOP,
+        expcCD, antCredCD, prodsCD,
+        atrawCD, atpatCD, empCD, antCD, paisCD,
+        tuvoPres, p, tm, tc,
+      );
       return NextResponse.json({ sc: e1.sc, cDOP: e1.cDOP });
     }
 
-    // ── E2 ───────────────────────────────────────────────────────────────────
-    const ingEffTotal = ingTot + activosDOP;
-    const deuExist    = deuDOP + deuCDDOP;
-    const precioMinE2Usd = p.fin.precioMinE2Usd || 40000;
-    const virDOPMin = Math.round(precioMinE2Usd * tc / 10000) * 10000;
-    const e2NoViable = virDOPMin >= prDOP;
+    const input: CalcInput = {
+      edad, pais, emp, ant, tuvoPres, expc, antCred, prods,
+      atraw, atpat, tieneCD, activos,
+      ingDOP, deuDOP, ingCDDOP, deuCDDOP,
+      expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD,
+      vinmDOP, iniDOP, mr,
+    };
 
-    let e2: ScoreResult = { sc: 0, cDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
-    let mrDOP = 0, virDOP = 0, isiDOP = iniDOP;
+    const result = computeFull(input, p, tm, tc);
 
-    if (!e2NoViable) {
-      for (let pct = 0.95; pct >= 0.30; pct = Math.round((pct - 0.05) * 100) / 100) {
-        let vir2 = Math.round(vinmDOP * pct / 10000) * 10000;
-        if (vir2 < virDOPMin) vir2 = virDOPMin;
-        if (vir2 >= vinmDOP) continue;
-        const mr2 = Math.max(0, vir2 - iniDOP);
-        if (mr2 <= 0) break;
-        const e2t = scoreFn(mr2, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc);
-        if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = iniDOP; e2 = e2t; }
-        if (e2.sc >= 80) break;
+    // ── Resultados por entidad bancaria — SOLO en preview/desarrollo ─────────
+    // VERCEL_ENV es 'production' en precalificaterd.com/.net/.do; 'preview' en
+    // los deploys de rama; y no existe en local. Así el feature multi-banco es
+    // visible en el sitio real y en las vistas previas de Vercel, pero nunca
+    // en producción hasta que se retire este check deliberadamente.
+    const previewMultibanco = process.env.VERCEL_ENV !== 'production' && p.ui.multibancoActivo;
+    let bancos: unknown[] | undefined;
+    if (previewMultibanco) {
+      const activos_ = await loadBancosActivos(flatMap);
+      if (activos_.length > 0) {
+        bancos = activos_.map((b) => {
+          const tmB = mr === 'USD' ? tusd : (b.tasa_interes / 100 / 12);
+          const r = computeFull(input, b.params, tmB, tc);
+          return {
+            id: b.id, slug: b.slug, nombre: b.nombre, color: b.color,
+            iniciales: b.iniciales, logoUrl: b.logo_url, tasaInteres: b.tasa_interes,
+            ...r,
+          };
+        });
       }
     }
-
-    if (e2.sc < 80) {
-      const cmaxHip = Math.max(0, ingEffTotal * 0.33 - deuExist);
-      mrDOP = cmaxHip > 0 ? Math.round((cmaxHip * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000 : 0;
-      if (mrDOP >= prDOP) mrDOP = Math.max(0, prDOP - 100000);
-
-      virDOP = mrDOP > 0 ? Math.round(mrDOP / 0.80 / 10000) * 10000 : 0;
-      if (virDOP > 0 && virDOP < virDOPMin) virDOP = virDOPMin;
-      const isiMin = virDOP > 0 ? Math.round(virDOP * 0.20 / 10000) * 10000 : 0;
-      isiDOP = Math.min(iniDOP, virDOP > 0 ? virDOP * 0.80 : 0);
-      if (isiDOP < isiMin) isiDOP = isiMin;
-      if (virDOP > 0) mrDOP = Math.max(0, virDOP - isiDOP);
-
-      e2 = (!e2NoViable && mrDOP > 0)
-        ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc)
-        : { sc: 0, cDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
-
-      if (!e2NoViable) {
-        const ratios = [0.30, 0.28, 0.25];
-        for (let ri = 0; ri < ratios.length && e2.sc < 85; ri++) {
-          const cap2 = ingEffTotal * ratios[ri] - deuExist;
-          if (cap2 > 0) {
-            let mr2 = Math.round((Math.max(0, cap2) * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000;
-            if (mr2 > 0 && mr2 < prDOP) {
-              let vir2 = Math.round(mr2 / 0.80 / 10000) * 10000;
-              if (vir2 < virDOPMin) vir2 = virDOPMin;
-              if (vir2 < prDOP) {
-                const isi2min = Math.round(vir2 * 0.20 / 10000) * 10000;
-                let isi2 = Math.min(iniDOP, vir2 * 0.80);
-                if (isi2 < isi2min) isi2 = isi2min;
-                mr2 = Math.max(0, vir2 - isi2);
-                const e2t = scoreFn(mr2, isi2, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc);
-                if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = isi2; e2 = e2t; }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    const e2Reached = e2.sc >= 85;
-    const why = buildWhy(e1, antCred, tuvoPres, activosDOP, pais, edad);
-    const sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activosDOP, p, tm, tc);
-    const cp = credPerfil(e1.pExpTit, e1.pAt, antCred, tuvoPres);
 
     return NextResponse.json({
-      e1, e2, why, sims, cp,
-      virDOP, mrDOP, isiDOP, prDOP,
-      e2Reached, e2NoViable, virDOPMin,
+      ...result,
       tc, tdop, tusd,
       popupActivo: p.ui.popupActivo,
       contadorVisible: p.ui.contadorVisible,
+      bancos,
     });
   } catch (err) {
     console.error('Error en /api/calcular:', err);

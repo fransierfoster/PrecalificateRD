@@ -189,3 +189,140 @@ export async function deleteAnuncioImagen(formData: FormData): Promise<{ ok: boo
   revalidatePath('/admin');
   return { ok: true };
 }
+
+// ── Bancos (multi-banco — ver nota en app/api/calcular/route.ts) ───────────
+
+export async function saveBanco(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const id = String(formData.get('id'));
+  const file = formData.get('logo') as File | null;
+
+  const supabase = await createClient();
+
+  const updates: Record<string, unknown> = {
+    nombre: String(formData.get('nombre') || ''),
+    color: String(formData.get('color') || '#1D3A8A'),
+    iniciales: String(formData.get('iniciales') || '').slice(0, 3).toUpperCase(),
+    tasa_interes: Number(formData.get('tasa_interes') || 0),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (file && file.size > 0) {
+    const ext = file.name.split('.').pop();
+    const path = `banco-${id}.${ext}`;
+    const bytes = await file.arrayBuffer();
+    const { error: upErr } = await supabase.storage.from('bancos-logos').upload(path, bytes, {
+      contentType: file.type,
+      upsert: true,
+    });
+    if (upErr) return { ok: false, error: upErr.message };
+    const { data: urlData } = supabase.storage.from('bancos-logos').getPublicUrl(path);
+    updates.logo_url = urlData.publicUrl + '?t=' + Date.now();
+  }
+
+  const { error } = await supabase.from('precalifica_bancos').update(updates).eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+export async function toggleBanco(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const id = String(formData.get('id'));
+  const activo = formData.get('activo') === 'true';
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('precalifica_bancos')
+    .update({ activo, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+export async function reorderBanco(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const id = String(formData.get('id'));
+  const direccion = String(formData.get('direccion'));
+
+  const supabase = await createClient();
+  const { data: todos } = await supabase
+    .from('precalifica_bancos')
+    .select('id, orden')
+    .order('orden');
+
+  if (!todos) return { ok: false, error: 'No se pudieron cargar los bancos' };
+
+  const idx = todos.findIndex((b) => b.id === id);
+  const swapIdx = direccion === 'up' ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= todos.length) return { ok: true };
+
+  const ordenA = todos[idx].orden;
+  const ordenB = todos[swapIdx].orden;
+
+  await supabase.from('precalifica_bancos').update({ orden: ordenB }).eq('id', todos[idx].id);
+  await supabase.from('precalifica_bancos').update({ orden: ordenA }).eq('id', todos[swapIdx].id);
+
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+export async function deleteBancoLogo(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const id = String(formData.get('id'));
+
+  const supabase = await createClient();
+  const exts = ['jpg', 'jpeg', 'png', 'webp', 'svg'];
+  for (const ext of exts) {
+    await supabase.storage.from('bancos-logos').remove([`banco-${id}.${ext}`]);
+  }
+  const { error } = await supabase
+    .from('precalifica_bancos')
+    .update({ logo_url: null, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+export async function saveBancoParametro(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const bancoId = String(formData.get('banco_id'));
+  const clave = String(formData.get('clave'));
+  const categoria = String(formData.get('categoria') || '');
+  const valor = Number(formData.get('valor'));
+  const passErr = checkAdminPassword(formData);
+  if (passErr) return { ok: false, error: passErr };
+  if (!bancoId || !clave || Number.isNaN(valor)) return { ok: false, error: 'Valor inválido' };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('precalifica_bancos_parametros')
+    .upsert(
+      { banco_id: bancoId, clave, categoria, valor, updated_at: new Date().toISOString() },
+      { onConflict: 'banco_id,clave' },
+    );
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+export async function addBanco(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const nombre = String(formData.get('nombre') || '').trim();
+  if (!nombre) return { ok: false, error: 'El nombre es obligatorio' };
+
+  const slug = nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `banco-${Date.now()}`;
+
+  const supabase = await createClient();
+  const { data: existentes } = await supabase.from('precalifica_bancos').select('orden').order('orden', { ascending: false }).limit(1);
+  const orden = (existentes?.[0]?.orden || 0) + 1;
+
+  const { error } = await supabase.from('precalifica_bancos').insert({
+    slug, nombre, activo: false, orden,
+    iniciales: nombre.slice(0, 3).toUpperCase(),
+  });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin');
+  return { ok: true };
+}
