@@ -1999,7 +1999,47 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
       y += 14;
     }
 
-    var whyLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1)] + '.';
+    // Comparativo por entidad bancaria -- va justo debajo de los escenarios,
+    // como continuacion directa de la evaluacion (no despues del "por que").
+    // Es un ranking neutral por probabilidad: no marca ninguna entidad como
+    // "seleccionada" (esa nocion solo existe en la sesion web, no tiene
+    // sentido en un documento descargado).
+    var bancosPresent = !!(SD.bancos && SD.bancos.length > 1);
+    if (bancosPresent) {
+      if (y > 225) { doc.addPage(); y = 20; }
+      var bancosLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1)] + '.';
+      secHead(bancosLabel + '  RESULTADOS POR ENTIDAD BANCARIA', INK3);
+
+      var bancosOrdenados = SD.bancos.slice().sort(function (a, b) { return b.e1.sc - a.e1.sc; });
+      var bancosRows = bancosOrdenados.map(function (b) {
+        return [b.nombre, b.e1.sc + '%', fmtRD(b.e1.cDOP) + '/mes'];
+      });
+
+      doc.autoTable({
+        startY: y,
+        head: [['Entidad', 'Probabilidad', 'Cuota mensual estimada']],
+        body: bancosRows,
+        theme: 'plain',
+        styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 },
+        headStyles: { textColor: INK3, fontStyle: 'bold', fontSize: 7 },
+        alternateRowStyles: { fillColor: BG },
+        columnStyles: { 1: { fontStyle: 'bold' } },
+        margin: { left: mL, right: mR_pdf },
+        didParseCell: function (data) {
+          if (data.section === 'body' && data.column.index === 1) {
+            var sc = parseInt(data.cell.raw, 10);
+            var col = sc >= 80 ? GRN : sc >= 70 ? [180, 100, 0] : RED;
+            data.cell.styles.textColor = col;
+          }
+        },
+      });
+      y = doc.lastAutoTable.finalY + 4;
+      doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
+      doc.text('Comparativo orientativo, ordenado de mayor a menor probabilidad. Los criterios reales de cada entidad pueden variar.', mL, y);
+      y += 9;
+    }
+
+    var whyLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1) + (bancosPresent ? 1 : 0)] + '.';
     if (y > 220) { doc.addPage(); y = 20; }
     secHead(whyLabel + '  ¿POR QUÉ ESTE RESULTADO?', INK3);
 
@@ -2029,32 +2069,6 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
     });
 
     y = whyStartY + whyTotalH + 8;
-
-    if (SD.bancos && SD.bancos.length > 1) {
-      if (y > 230) { doc.addPage(); y = 20; }
-      var bancosLabel = pdfRn[pdfSecBase + (showE2pdf ? 2 : 1) + 1] + '.';
-      secHead(bancosLabel + '  RESULTADOS POR ENTIDAD BANCARIA', INK3);
-
-      var bancosOrdenados = SD.bancos.slice().sort(function (a, b) { return b.e1.sc - a.e1.sc; });
-      var bancosRows = bancosOrdenados.map(function (b) {
-        return [b.nombre + (b.id === SD.bancoSelId ? ' ✓' : ''), b.e1.sc + '%', fmtRD(b.e1.cDOP) + '/mes'];
-      });
-
-      doc.autoTable({
-        startY: y,
-        head: [['Entidad', 'Probabilidad', 'Cuota mensual estimada']],
-        body: bancosRows,
-        theme: 'plain',
-        styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: INK, lineColor: RULE, lineWidth: 0.2 },
-        headStyles: { textColor: INK3, fontStyle: 'bold', fontSize: 7 },
-        alternateRowStyles: { fillColor: BG },
-        margin: { left: mL, right: mR_pdf },
-      });
-      y = doc.lastAutoTable.finalY + 4;
-      doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
-      doc.text('✓ Entidad seleccionada en tu evaluación. Comparativo orientativo — los criterios reales de cada entidad pueden variar.', mL, y);
-      y += 9;
-    }
 
     if (y > 260) { doc.addPage(); y = 20; }
     doc.setDrawColor(RULE[0], RULE[1], RULE[2]); doc.setLineWidth(0.3);
