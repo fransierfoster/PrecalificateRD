@@ -9,6 +9,46 @@ var SNMS = ['', 'Perfil Personal', 'Situación Financiera', 'Inmueble y Capital'
 let SD = {};
 var MR = 'DOP', TOK = false, COK = false, PRESVAL = null, ATVAL = null, CDATVAL = null, _popupTimer = null;
 
+// ── MODO PRUEBA ──
+// ?test=1 en la URL activa el modo prueba (no guarda cálculos/leads/eventos
+// reales). Además de leer la URL, queda "pegado" en este navegador vía
+// localStorage la primera vez que se detecta -- así, si en algún clic o
+// navegación se pierde el ?test=1 de la barra de direcciones, el modo prueba
+// sigue activo hasta que el propio usuario lo apague con ?test=0.
+var TEST_STORAGE_KEY = 'precal_test_mode';
+(function initTestMode() {
+  try {
+    var param = new URLSearchParams(window.location.search).get('test');
+    if (param === '1') localStorage.setItem(TEST_STORAGE_KEY, '1');
+    else if (param === '0') localStorage.removeItem(TEST_STORAGE_KEY);
+  } catch (e) { /* localStorage no disponible (modo privado, etc.) */ }
+})();
+
+function isTestMode() {
+  try {
+    if (new URLSearchParams(window.location.search).get('test') === '1') return true;
+    return localStorage.getItem(TEST_STORAGE_KEY) === '1';
+  } catch (e) {
+    return new URLSearchParams(window.location.search).get('test') === '1';
+  }
+}
+
+function showTestBadge() {
+  if (!isTestMode() || document.getElementById('test-mode-badge')) return;
+  var b = document.createElement('div');
+  b.id = 'test-mode-badge';
+  b.textContent = '🧪 Modo prueba — no se guardan datos';
+  b.style.cssText = 'position:fixed;bottom:8px;left:8px;z-index:9999;background:#111;color:#FFD166;font-family:Inter,sans-serif;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:none;';
+  document.body.appendChild(b);
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', showTestBadge);
+  } else {
+    showTestBadge();
+  }
+}
+
 // ── SUPABASE ──
 var SUPA_URL = (typeof window !== 'undefined' && window.__SUPA_URL__) || '';
 var SUPA_KEY = (typeof window !== 'undefined' && window.__SUPA_KEY__) || '';
@@ -1379,7 +1419,7 @@ calc = function () {
 function sendWebhook(tipo, data, lead) {
   try {
     if (!SUPA_URL || !SUPA_KEY) return;
-    if (new URLSearchParams(window.location.search).get('test') === '1') return;
+    if (isTestMode()) return;
 
     if (tipo === 'calculo') {
       var newId = (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(16) + Math.random().toString(16).slice(2)));
@@ -1510,7 +1550,7 @@ var QUIERE_OFERTAS = false;
 
 function trackEvent(nombre) {
   if (!SUPA_URL || !SUPA_KEY) return;
-  if (new URLSearchParams(window.location.search).get('test') === '1') return;
+  if (isTestMode()) return;
   var sid = sessionStorage.getItem('precal_sid');
   if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('precal_sid', sid); }
   fetch(SUPA_URL + '/rest/v1/precalifica_eventos', {
