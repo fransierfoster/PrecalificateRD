@@ -18,37 +18,38 @@ export type Banco = {
 export type BancoParametro = { clave: string; categoria: string | null; valor: number; descripcion: string | null };
 
 const FACTORES = [
-  { key: 'peso_dti', label: 'Capacidad de endeudamiento (DTI)' },
-  { key: 'peso_mora', label: 'Historial de pagos (mora)' },
-  { key: 'peso_exp', label: 'Experiencia crediticia' },
-  { key: 'peso_ltv', label: 'Monto de inicial (LTV)' },
-  { key: 'peso_ing', label: 'Nivel de ingresos' },
-  { key: 'peso_est', label: 'Estabilidad laboral' },
-  { key: 'peso_pais', label: 'País de residencia' },
-  { key: 'peso_act', label: 'Ingresos adicionales' },
-  { key: 'peso_edad', label: 'Edad del solicitante' },
+  { key: 'peso_dti', cat: 'dti', label: 'Capacidad de endeudamiento (DTI)' },
+  { key: 'peso_mora', cat: 'mora', label: 'Historial de pagos (mora)' },
+  { key: 'peso_exp', cat: 'exp', label: 'Experiencia crediticia' },
+  { key: 'peso_ltv', cat: 'ltv', label: 'Monto de inicial (LTV)' },
+  { key: 'peso_ing', cat: 'ing', label: 'Nivel de ingresos' },
+  { key: 'peso_est', cat: 'est', label: 'Estabilidad laboral' },
+  { key: 'peso_pais', cat: 'pais', label: 'País de residencia' },
+  { key: 'peso_act', cat: 'act', label: 'Ingresos adicionales' },
+  { key: 'peso_edad', cat: 'edad', label: 'Edad del solicitante' },
 ];
 
 export default function BancosPanel({
   bancos,
   paramsByBanco,
   pesosGlobales,
+  subParamsGlobales,
   total,
 }: {
   bancos: Banco[];
   paramsByBanco: Record<string, Record<string, BancoParametro>>;
   pesosGlobales: Record<string, number>;
+  subParamsGlobales: Record<string, BancoParametro[]>;
   total: number;
 }) {
   const sorted = [...bancos].sort((a, b) => a.orden - b.orden);
-  const activos = bancos.filter((b) => b.activo).length;
 
   return (
     <div>
       <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 16px' }}>
         Cuando hay 2 o más bancos activos, la pantalla de resultados del cliente muestra una tarjeta comparativa por cada uno,
-        en vez de un solo puntaje general. Cada banco hereda los parámetros globales del motor y solo necesita guardar los
-        que quiera personalizar — el resto se toma automáticamente del valor global.
+        en vez de un solo puntaje general. Cada banco hereda los parámetros globales del motor (pesos y subparámetros) y solo
+        necesita guardar los que quiera personalizar — el resto se toma automáticamente del valor global.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {sorted.map((b, idx) => (
@@ -59,6 +60,7 @@ export default function BancosPanel({
             total={total}
             overrides={paramsByBanco[b.id] || {}}
             pesosGlobales={pesosGlobales}
+            subParamsGlobales={subParamsGlobales}
           />
         ))}
       </div>
@@ -68,10 +70,11 @@ export default function BancosPanel({
 }
 
 function BancoSlot({
-  banco, idx, total, overrides, pesosGlobales,
+  banco, idx, total, overrides, pesosGlobales, subParamsGlobales,
 }: {
   banco: Banco; idx: number; total: number;
   overrides: Record<string, BancoParametro>; pesosGlobales: Record<string, number>;
+  subParamsGlobales: Record<string, BancoParametro[]>;
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -151,7 +154,7 @@ function BancoSlot({
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               {FACTORES.map((f) => (
-                <BancoFactorRow
+                <BancoFactorBlock
                   key={f.key}
                   bancoId={banco.id}
                   label={f.label}
@@ -159,6 +162,8 @@ function BancoSlot({
                   valor={overrides[f.key]?.valor ?? pesosGlobales[f.key] ?? 0}
                   esOverride={overrides[f.key] !== undefined}
                   globalValor={pesosGlobales[f.key] ?? 0}
+                  subParams={subParamsGlobales[f.cat] || []}
+                  overrides={overrides}
                 />
               ))}
             </div>
@@ -257,10 +262,56 @@ function BancoBasicForm({ banco }: { banco: Banco }) {
   );
 }
 
-function BancoFactorRow({
-  bancoId, label, clave, valor, esOverride, globalValor,
+function BancoFactorBlock({
+  bancoId, label, clave, valor, esOverride, globalValor, subParams, overrides,
 }: {
   bancoId: string; label: string; clave: string; valor: number; esOverride: boolean; globalValor: number;
+  subParams: BancoParametro[]; overrides: Record<string, BancoParametro>;
+}) {
+  const personalizados = subParams.filter((p) => overrides[p.clave] !== undefined).length;
+
+  return (
+    <div style={{ border: '1px solid #e5e5e5', borderRadius: 9, padding: '9px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700 }}>
+          {label}
+          {!esOverride && <span style={{ fontWeight: 400, color: '#9CA3AF', marginLeft: 6, fontSize: 11 }}>(usa el valor global: {globalValor}%)</span>}
+        </div>
+        <BancoParamRow bancoId={bancoId} clave={clave} categoria="pesos" valor={valor} unit="%" compact />
+      </div>
+
+      {subParams.length > 0 && (
+        <details style={{ marginTop: 8 }}>
+          <summary style={{ cursor: 'pointer', fontSize: 11, fontWeight: 600, color: '#C0161C', listStyle: 'none' }}>
+            ▸ Ver / editar {subParams.length} subparámetros
+            {personalizados > 0 && <span style={{ color: '#6B7280', fontWeight: 400 }}> ({personalizados} personalizados)</span>}
+          </summary>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 8, marginTop: 9 }}>
+            {subParams.map((p) => (
+              <div key={p.clave} style={{ border: '1px solid #eee', borderRadius: 8, padding: '8px 10px' }}>
+                <label style={{ fontSize: 10.5, color: '#777', display: 'block', marginBottom: 4, lineHeight: 1.3 }}>
+                  {p.descripcion || p.clave}
+                  {overrides[p.clave] === undefined && <span style={{ color: '#B0B7C0' }}> (global: {p.valor})</span>}
+                </label>
+                <BancoParamRow
+                  bancoId={bancoId}
+                  clave={p.clave}
+                  categoria={p.categoria || ''}
+                  valor={overrides[p.clave]?.valor ?? p.valor}
+                />
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function BancoParamRow({
+  bancoId, clave, categoria, valor, unit, compact,
+}: {
+  bancoId: string; clave: string; categoria: string; valor: number; unit?: string; compact?: boolean;
 }) {
   const [value, setValue] = useState(valor);
   const [saving, setSaving] = useState(false);
@@ -274,32 +325,27 @@ function BancoFactorRow({
     const fd = new FormData();
     fd.set('banco_id', bancoId);
     fd.set('clave', clave);
-    fd.set('categoria', 'pesos');
+    fd.set('categoria', categoria);
     fd.set('valor', String(value));
     fd.set('adminPassword', password);
     const res = await saveBancoParametro(fd);
     setSaving(false);
     setMsg(res.ok ? 'Guardado ✓' : res.error || 'Error');
+    if (res.ok) setTimeout(() => setMsg(''), 3000);
   }
 
   return (
-    <div style={{ border: '1px solid #e5e5e5', borderRadius: 9, padding: '9px 12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700 }}>
-          {label}
-          {!esOverride && <span style={{ fontWeight: 400, color: '#9CA3AF', marginLeft: 6, fontSize: 11 }}>(usa el valor global: {globalValor}%)</span>}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <input type="number" step="any" value={value} onChange={(e) => setValue(Number(e.target.value))}
-            style={{ width: 60, border: '1px solid #ccc', borderRadius: 6, padding: '5px 6px', fontSize: 12 }} />
-          <span style={{ fontSize: 11, color: '#888' }}>%</span>
-          <button type="button" disabled={saving} onClick={handleSave}
-            style={{ background: '#C0161C', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-            {saving ? '…' : 'Guardar'}
-          </button>
-        </div>
+    <div style={{ display: compact ? 'contents' : 'block' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <input type="number" step="any" value={value} onChange={(e) => setValue(Number(e.target.value))}
+          style={{ width: compact ? 60 : '100%', flex: compact ? undefined : 1, border: '1px solid #ccc', borderRadius: 6, padding: '5px 6px', fontSize: 12 }} />
+        {unit && <span style={{ fontSize: 11, color: '#888' }}>{unit}</span>}
+        <button type="button" disabled={saving} onClick={handleSave}
+          style={{ background: '#C0161C', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+          {saving ? '…' : 'Guardar'}
+        </button>
       </div>
-      {msg && <span style={{ fontSize: 11, color: msg.startsWith('Guardado') ? '#166534' : '#991B1B' }}>{msg}</span>}
+      {msg && <div><span style={{ fontSize: 11, color: msg.startsWith('Guardado') ? '#166534' : '#991B1B' }}>{msg}</span></div>}
     </div>
   );
 }

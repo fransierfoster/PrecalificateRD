@@ -180,7 +180,7 @@ export default async function AdminPage() {
     .returns<Anuncio[]>();
 
   let bancos: Banco[] = [];
-  let paramsByBanco: Record<string, Record<string, BancoParametro>> = {};
+  const paramsByBanco: Record<string, Record<string, BancoParametro>> = {};
   if (PREVIEW_MULTIBANCO) {
     const { data: bancosData } = await supabase
       .from('precalifica_bancos')
@@ -294,17 +294,33 @@ export default async function AdminPage() {
                   />
                 </div>
               )}
-              <BancosPanel bancos={bancos} paramsByBanco={paramsByBanco} pesosGlobales={{
-                peso_dti: pesosByClave.peso_dti?.valor ?? 0,
-                peso_mora: pesosByClave.peso_mora?.valor ?? 0,
-                peso_exp: pesosByClave.peso_exp?.valor ?? 0,
-                peso_ltv: pesosByClave.peso_ltv?.valor ?? 0,
-                peso_ing: pesosByClave.peso_ing?.valor ?? 0,
-                peso_est: pesosByClave.peso_est?.valor ?? 0,
-                peso_pais: pesosByClave.peso_pais?.valor ?? 0,
-                peso_act: pesosByClave.peso_act?.valor ?? 0,
-                peso_edad: pesosByClave.peso_edad?.valor ?? 0,
-              }} total={bancos.length} />
+              <BancosPanel
+                bancos={bancos}
+                paramsByBanco={paramsByBanco}
+                pesosGlobales={{
+                  peso_dti: pesosByClave.peso_dti?.valor ?? 0,
+                  peso_mora: pesosByClave.peso_mora?.valor ?? 0,
+                  peso_exp: pesosByClave.peso_exp?.valor ?? 0,
+                  peso_ltv: pesosByClave.peso_ltv?.valor ?? 0,
+                  peso_ing: pesosByClave.peso_ing?.valor ?? 0,
+                  peso_est: pesosByClave.peso_est?.valor ?? 0,
+                  peso_pais: pesosByClave.peso_pais?.valor ?? 0,
+                  peso_act: pesosByClave.peso_act?.valor ?? 0,
+                  peso_edad: pesosByClave.peso_edad?.valor ?? 0,
+                }}
+                subParamsGlobales={{
+                  dti: groups.dti || [],
+                  mora: groups.mora || [],
+                  exp: groups.exp || [],
+                  ltv: groups.ltv || [],
+                  ing: groups.ing || [],
+                  est: groups.est || [],
+                  pais: groups.pais || [],
+                  act: groups.act || [],
+                  edad: groups.edad || [],
+                }}
+                total={bancos.length}
+              />
             </div>
           </details>
         </div>
