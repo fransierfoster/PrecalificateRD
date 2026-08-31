@@ -611,12 +611,13 @@ function renderBancos() {
   var chips = ordenados.map(function (b, i) {
     var bd = bdg(b.e1.sc);
     var sel = (b.id === SD.bancoSelId);
+    var badge = (i === 0 && b.e1.sc >= 70) ? ' <span class="topbdg" style="color:' + bd.k + '">★</span>' : '';
     var logoHtml = b.logoUrl
       ? '<img src="' + b.logoUrl + '" alt="' + b.nombre + '">'
       : (b.iniciales || b.nombre.slice(0, 3).toUpperCase());
     return '<div class="bank-chip' + (sel ? ' sel' : '') + '" onclick="selectBanco(\'' + b.id + '\')">' +
       '<div class="mono" style="background:' + (b.color || '#1D3A8A') + '">' + logoHtml + '</div>' +
-      '<div class="info"><span class="nm">' + b.nombre + (i === 0 ? ' 🏆' : '') + '</span><span class="pct" style="color:' + bd.k + '">' + b.e1.sc + '%</span></div>' +
+      '<div class="info"><span class="nm">' + b.nombre + badge + '</span><span class="pct" style="color:' + bd.k + '">' + b.e1.sc + '%</span></div>' +
       '<div class="check">✓</div>' +
     '</div>';
   }).join('');
@@ -639,12 +640,13 @@ function renderBancosE2() {
   var chips = ordenados.map(function (b, i) {
     var bd = bdg(b.e2.sc);
     var sel = (b.id === SD.bancoE2Id);
+    var badge = (i === 0 && b.e2.sc >= 70) ? ' <span class="topbdg" style="color:' + bd.k + '">★</span>' : '';
     var logoHtml = b.logoUrl
       ? '<img src="' + b.logoUrl + '" alt="' + b.nombre + '">'
       : (b.iniciales || b.nombre.slice(0, 3).toUpperCase());
     return '<div class="bank-chip' + (sel ? ' sel' : '') + '" onclick="selectBancoE2(\'' + b.id + '\')">' +
       '<div class="mono" style="background:' + (b.color || '#1D3A8A') + '">' + logoHtml + '</div>' +
-      '<div class="info"><span class="nm">' + b.nombre + (i === 0 ? ' 🏆' : '') + '</span><span class="pct" style="color:' + bd.k + '">' + b.e2.sc + '%</span></div>' +
+      '<div class="info"><span class="nm">' + b.nombre + badge + '</span><span class="pct" style="color:' + bd.k + '">' + b.e2.sc + '%</span></div>' +
       '<div class="check">✓</div>' +
     '</div>';
   }).join('');

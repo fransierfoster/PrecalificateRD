@@ -268,6 +268,7 @@ footer strong{color:var(--red);}
 .bank-chip .mono img{width:100%;height:100%;object-fit:contain;background:#fff;}
 .bank-chip .info{display:flex;flex-direction:column;line-height:1.15;min-width:0;}
 .bank-chip .nm{font-size:10.5px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bank-chip .topbdg{font-size:10px;}
 .bank-chip .pct{font-size:12px;font-weight:800;font-family:'Sora',sans-serif;}
 .bank-chip .check{width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;display:none;align-items:center;justify-content:center;font-size:8px;margin-left:auto;flex-shrink:0;}
 .bank-chip.sel .check{display:flex;}
