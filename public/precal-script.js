@@ -611,13 +611,12 @@ function renderBancos() {
   var chips = ordenados.map(function (b, i) {
     var bd = bdg(b.e1.sc);
     var sel = (b.id === SD.bancoSelId);
-    var badge = (i === 0 && b.e1.sc >= 70) ? ' <span class="topbdg" style="color:' + bd.k + '">★</span>' : '';
     var logoHtml = b.logoUrl
       ? '<img src="' + b.logoUrl + '" alt="' + b.nombre + '">'
       : (b.iniciales || b.nombre.slice(0, 3).toUpperCase());
-    return '<div class="bank-chip' + (sel ? ' sel' : '') + '" onclick="selectBanco(\'' + b.id + '\')">' +
+    return '<div class="bank-chip' + (sel ? ' sel' : '') + '" style="border-color:' + bd.k + ';background:' + bd.k + '14" onclick="selectBanco(\'' + b.id + '\')">' +
       '<div class="mono" style="background:' + (b.color || '#1D3A8A') + '">' + logoHtml + '</div>' +
-      '<div class="info"><span class="nm">' + b.nombre + badge + '</span><span class="pct" style="color:' + bd.k + '">' + b.e1.sc + '%</span></div>' +
+      '<div class="info"><span class="nm">' + b.nombre + '</span><span class="pct" style="color:' + bd.k + '">' + b.e1.sc + '%</span></div>' +
       '<div class="check">✓</div>' +
     '</div>';
   }).join('');
@@ -640,13 +639,12 @@ function renderBancosE2() {
   var chips = ordenados.map(function (b, i) {
     var bd = bdg(b.e2.sc);
     var sel = (b.id === SD.bancoE2Id);
-    var badge = (i === 0 && b.e2.sc >= 70) ? ' <span class="topbdg" style="color:' + bd.k + '">★</span>' : '';
     var logoHtml = b.logoUrl
       ? '<img src="' + b.logoUrl + '" alt="' + b.nombre + '">'
       : (b.iniciales || b.nombre.slice(0, 3).toUpperCase());
-    return '<div class="bank-chip' + (sel ? ' sel' : '') + '" onclick="selectBancoE2(\'' + b.id + '\')">' +
+    return '<div class="bank-chip' + (sel ? ' sel' : '') + '" style="border-color:' + bd.k + ';background:' + bd.k + '14" onclick="selectBancoE2(\'' + b.id + '\')">' +
       '<div class="mono" style="background:' + (b.color || '#1D3A8A') + '">' + logoHtml + '</div>' +
-      '<div class="info"><span class="nm">' + b.nombre + badge + '</span><span class="pct" style="color:' + bd.k + '">' + b.e2.sc + '%</span></div>' +
+      '<div class="info"><span class="nm">' + b.nombre + '</span><span class="pct" style="color:' + bd.k + '">' + b.e2.sc + '%</span></div>' +
       '<div class="check">✓</div>' +
     '</div>';
   }).join('');
@@ -1513,8 +1511,12 @@ function calc() {
         if (SD.bancos[_bi].e1.sc > SD.bancos[_best].e1.sc) _best = _bi;
       }
       var _bestE2 = mejorBancoE2() || SD.bancos[_best];
-      selectBancoE2(_bestE2.id);
+      // selectBanco() debe ir primero: cada select*() llama a render(), y
+      // render() arma el popup una sola vez por calculo leyendo bancoSelId.
+      // Si selectBancoE2() corriera primero, ese primer render() vería
+      // bancoSelId todavia en null y el popup quedaria armado sin banco.
       selectBanco(SD.bancos[_best].id);
+      selectBancoE2(_bestE2.id);
     } else {
       render();
     }
