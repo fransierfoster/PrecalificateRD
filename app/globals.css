@@ -263,13 +263,13 @@ footer strong{color:var(--red);}
 #bank-chips-row, #bank-chips-row-e2{margin-bottom:9px;}
 .bank-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .bank-chip{display:flex;align-items:center;gap:7px;background:var(--su2);border:1.5px solid var(--bdr);border-radius:50px;padding:6px 10px 6px 6px;cursor:pointer;transition:all .15s;min-width:0;}
-.bank-chip.sel{border-color:var(--red) !important;background:rgba(192,22,28,.06) !important;}
+.bank-chip.sel{border-color:var(--blue) !important;background:rgba(29,58,138,.06) !important;box-shadow:0 0 0 2px rgba(29,58,138,.12) !important;}
 .bank-chip .mono{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Sora',sans-serif;font-weight:800;font-size:9px;flex-shrink:0;overflow:hidden;}
 .bank-chip .mono img{width:100%;height:100%;object-fit:contain;background:#fff;}
 .bank-chip .info{display:flex;flex-direction:column;line-height:1.15;min-width:0;}
 .bank-chip .nm{font-size:10.5px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .bank-chip .pct{font-size:12px;font-weight:800;font-family:'Sora',sans-serif;}
-.bank-chip .check{width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;display:none;align-items:center;justify-content:center;font-size:8px;margin-left:auto;flex-shrink:0;}
+.bank-chip .check{width:14px;height:14px;border-radius:50%;background:var(--blue);color:#fff;display:none;align-items:center;justify-content:center;font-size:8px;margin-left:auto;flex-shrink:0;}
 .bank-chip.sel .check{display:flex;}
 
 /* ── PDF download modal ── */
