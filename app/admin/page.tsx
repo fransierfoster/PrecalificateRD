@@ -9,10 +9,6 @@ import AnunciosPanel, { type Anuncio } from './AnuncioForm';
 import BancosPanel, { type Banco, type BancoParametro } from './BancosPanel';
 import './admin.css';
 
-// Multi-banco: visible en local y en vistas previas de Vercel, nunca en
-// producción — ver la nota en app/api/calcular/route.ts.
-const PREVIEW_MULTIBANCO = process.env.VERCEL_ENV !== 'production';
-
 type Parametro = {
   clave: string;
   valor: number;
@@ -182,7 +178,7 @@ export default async function AdminPage() {
 
   let bancos: Banco[] = [];
   const paramsByBanco: Record<string, Record<string, BancoParametro>> = {};
-  if (PREVIEW_MULTIBANCO) {
+  {
     const { data: bancosData } = await supabase
       .from('precalifica_bancos')
       .select('*')
@@ -277,10 +273,10 @@ export default async function AdminPage() {
         </details>
       </div>
 
-      {PREVIEW_MULTIBANCO && (
+      {(
         <div className="adm-card">
           <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 8, padding: '8px 12px', marginBottom: 16, fontSize: 12.5, color: '#92400E' }}>
-            🚧 En construcción — esta sección solo es visible en vistas previas y en local, nunca en precalificaterd.com.
+            ⚠️ El interruptor &quot;Modo comparación multi-banco&quot; controla si esto se ve en el sitio real, incluyendo precalificaterd.com. Mantenlo apagado hasta que quieras publicarlo.
           </div>
           <details className="adm-section-details">
             <summary><h2 style={{ display: 'inline' }}>Entidades bancarias {bancos.some((b) => b.activo) ? <span style={{ fontSize: 12, fontWeight: 400, color: '#065F46', background: '#D1FAE5', padding: '2px 8px', borderRadius: 10, marginLeft: 8 }}>{bancos.filter((b) => b.activo).length} activa{bancos.filter((b) => b.activo).length === 1 ? '' : 's'}</span> : ''}</h2></summary>
@@ -291,7 +287,7 @@ export default async function AdminPage() {
                     clave="ui_multibanco_activo"
                     valor={uiParams.find((p) => p.clave === 'ui_multibanco_activo')!.valor}
                     label="Modo comparación multi-banco"
-                    description="Si está apagado, el cliente ve un solo resultado general (comportamiento actual). Solo aplica en vistas previas / local mientras el feature esté en construcción."
+                    description="Si está apagado, el cliente ve un solo resultado general. Si está encendido, se activa en todos los entornos, incluyendo el sitio real."
                   />
                 </div>
               )}

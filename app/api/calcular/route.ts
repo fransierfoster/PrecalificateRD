@@ -140,6 +140,7 @@ async function loadParams(): Promise<Params> {
 interface BancoActivo {
   id: string; slug: string; nombre: string; color: string;
   iniciales: string; logo_url: string | null; tasa_interes: number;
+  popup_prioritario: boolean;
   params: Params;
 }
 
@@ -152,7 +153,7 @@ async function loadBancosActivos(globalFlatMap: Record<string, number> | null): 
     );
     const { data: bancos } = await supabase
       .from('precalifica_bancos')
-      .select('id, slug, nombre, color, iniciales, logo_url, tasa_interes')
+      .select('id, slug, nombre, color, iniciales, logo_url, tasa_interes, popup_prioritario')
       .eq('activo', true)
       .order('orden');
 
@@ -590,7 +591,7 @@ export async function POST(req: NextRequest) {
     // seleccionado (multi-banco), usamos sus parámetros y su tasa propia.
     if (sliderOnly) {
       let pSlider = p, tmSlider = tm;
-      if (bancoId && process.env.VERCEL_ENV !== 'production') {
+      if (bancoId && p.ui.multibancoActivo) {
         const bancosDisp = await loadBancosActivos(flatMap);
         const banco = bancosDisp.find((b) => b.id === bancoId);
         if (banco) {
@@ -620,14 +621,15 @@ export async function POST(req: NextRequest) {
 
     const result = computeFull(input, p, tm, tc);
 
-    // ── Resultados por entidad bancaria — SOLO en preview/desarrollo ─────────
-    // VERCEL_ENV es 'production' en precalificaterd.com/.net/.do; 'preview' en
-    // los deploys de rama; y no existe en local. Así el feature multi-banco es
-    // visible en el sitio real y en las vistas previas de Vercel, pero nunca
-    // en producción hasta que se retire este check deliberadamente.
-    const previewMultibanco = process.env.VERCEL_ENV !== 'production' && p.ui.multibancoActivo;
+    // ── Resultados por entidad bancaria ──────────────────────────────────────
+    // Controlado unicamente por el toggle "Activar multibanco" del admin
+    // (ui_multibanco_activo). Antes tambien exigia VERCEL_ENV !== 'production'
+    // para que el feature nunca pudiera encenderse por accidente en el sitio
+    // real mientras estaba en construccion; ese candado ya se retiro a
+    // proposito para permitir activarlo en producción desde el admin cuando
+    // este listo.
     let bancos: unknown[] | undefined;
-    if (previewMultibanco) {
+    if (p.ui.multibancoActivo) {
       const activos_ = await loadBancosActivos(flatMap);
       if (activos_.length > 0) {
         bancos = activos_.map((b) => {
@@ -636,6 +638,7 @@ export async function POST(req: NextRequest) {
           return {
             id: b.id, slug: b.slug, nombre: b.nombre, color: b.color,
             iniciales: b.iniciales, logoUrl: b.logo_url, tasaInteres: b.tasa_interes,
+            popupPrioritario: b.popup_prioritario,
             ...r,
           };
         });

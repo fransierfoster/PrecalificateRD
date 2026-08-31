@@ -13,6 +13,7 @@ export type Banco = {
   color: string;
   iniciales: string;
   tasa_interes: number;
+  popup_prioritario: boolean;
 };
 
 export type BancoParametro = { clave: string; categoria: string | null; valor: number; descripcion: string | null };
@@ -119,6 +120,14 @@ function BancoSlot({
         }}>
           {banco.activo ? 'Activo' : 'Inactivo'}
         </span>
+        {banco.popup_prioritario && (
+          <span style={{
+            fontSize: 11, padding: '2px 10px', borderRadius: 20, fontWeight: 600,
+            background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D',
+          }}>
+            ★ Popup destacado
+          </span>
+        )}
         <button type="button" onClick={() => handleOrder('up')} disabled={idx === 0 || isPending}
           style={{ border: '1px solid #e5e5e5', borderRadius: 4, background: '#fff', width: 28, height: 28, cursor: 'pointer', fontSize: 12 }}>▲</button>
         <button type="button" onClick={() => handleOrder('down')} disabled={idx === total - 1 || isPending}
@@ -251,6 +260,19 @@ function BancoBasicForm({ banco }: { banco: Banco }) {
           <input name="color" type="color" defaultValue={banco.color} style={{ width: '100%', border: '1px solid #ccc', borderRadius: 6, padding: '2px', height: 32, boxSizing: 'border-box' }} />
         </div>
       </div>
+
+      <label style={{
+        display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 12, padding: '9px 12px',
+        border: '1px solid #FCD34D', background: '#FFFBEB', borderRadius: 8, cursor: 'pointer',
+      }}>
+        <input type="checkbox" name="popup_prioritario" defaultChecked={banco.popup_prioritario} style={{ marginTop: 2 }} />
+        <span style={{ fontSize: 12, color: '#92400E', lineHeight: 1.4 }}>
+          <strong>★ Popup destacado (acuerdo comercial).</strong> Cuando el resultado de este banco
+          sea ≥ 70%, el popup de lead muestra este banco en vez del mejor calificado — aunque otro
+          banco tenga un puntaje más alto. Úsalo solo para un banco a la vez.
+        </span>
+      </label>
+
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10 }}>
         <button type="submit" disabled={saving}
           style={{ background: '#C0161C', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>

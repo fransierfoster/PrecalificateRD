@@ -873,18 +873,38 @@ function render() {
   // banco despues vuelve a llamar render() pero no debe reabrir el popup.
   if (!_popupShownForCalc) {
     clearTimeout(_popupTimer);
-    var _scLead = e1.sc;
-    var _isE2Lead = false;
-    if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _scLead = SD.e2.sc; _isE2Lead = true; }
+
+    // Banco "destacado" (acuerdo comercial, admin > Entidades bancarias):
+    // si algun banco activo tiene popupPrioritario=true y su PROPIO
+    // resultado en este calculo llega a 70%, el popup lo muestra a el en
+    // vez del banco mejor calificado -- se prioriza sobre la logica
+    // default de abajo. Pensado para un solo banco a la vez.
+    var _destacado = null;
+    if (SD.bancos) {
+      for (var _di = 0; _di < SD.bancos.length; _di++) {
+        if (SD.bancos[_di].popupPrioritario) { _destacado = SD.bancos[_di]; break; }
+      }
+    }
+
+    var _scLead, _isE2Lead, _bancoPopup;
+    if (_destacado && _destacado.e1 && _destacado.e1.sc >= 70) {
+      _scLead = _destacado.e1.sc; _isE2Lead = false; _bancoPopup = _destacado;
+    } else if (_destacado && showE2 && _destacado.e2 && !_destacado.e2NoViable && _destacado.e2.sc >= 70) {
+      _scLead = _destacado.e2.sc; _isE2Lead = true; _bancoPopup = _destacado;
+    } else {
+      _scLead = e1.sc;
+      _isE2Lead = false;
+      if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _scLead = SD.e2.sc; _isE2Lead = true; }
+      // El banco a mostrar en el popup depende de si el resultado viene del
+      // Escenario 1 (banco elegido arriba) o del Escenario 2 (su propio mejor
+      // banco, que puede ser otro). Si multibanco no esta activo, bancoPorId
+      // siempre devuelve null y el popup simplemente no muestra logo/nombre.
+      _bancoPopup = _isE2Lead ? bancoPorId(SD.bancoE2Id) : bancoPorId(SD.bancoSelId);
+    }
 
     var _e2sc = (showE2 && SD.e2 && SD.e2.sc != null) ? SD.e2.sc : 0;
     var _scAd = Math.max(e1.sc || 0, _e2sc);
     var _montoAd = (_e2sc >= (e1.sc || 0) && SD.virDOP) ? SD.virDOP : (SD.vinmDOP || 0);
-    // El banco a mostrar en el popup depende de si el resultado viene del
-    // Escenario 1 (banco elegido arriba) o del Escenario 2 (su propio mejor
-    // banco, que puede ser otro). Si multibanco no esta activo, bancoPorId
-    // siempre devuelve null y el popup simplemente no muestra logo/nombre.
-    var _bancoPopup = _isE2Lead ? bancoPorId(SD.bancoE2Id) : bancoPorId(SD.bancoSelId);
 
     if (_scLead >= 70 || _scAd >= 70) {
       _popupShownForCalc = true;

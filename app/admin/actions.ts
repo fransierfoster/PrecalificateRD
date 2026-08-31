@@ -203,6 +203,7 @@ export async function saveBanco(formData: FormData): Promise<{ ok: boolean; erro
     color: String(formData.get('color') || '#1D3A8A'),
     iniciales: String(formData.get('iniciales') || '').slice(0, 3).toUpperCase(),
     tasa_interes: Number(formData.get('tasa_interes') || 0),
+    popup_prioritario: formData.get('popup_prioritario') === 'on',
     updated_at: new Date().toISOString(),
   };
 
