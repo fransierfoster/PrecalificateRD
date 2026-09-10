@@ -1038,6 +1038,24 @@ function showLeadPopup(sc, isE2, banco) {
   var autoTag = document.getElementById('lead-popup-auto-tag');
   if (autoTag) autoTag.style.display = isE2 ? 'inline-flex' : 'none';
 
+  // Detalle de monto -- solo cuando el resultado viene del Escenario 2 (una
+  // propiedad distinta a la que el cliente pidio), para que quede claro a
+  // que precio/monto aplica esta probabilidad. Usa los datos del banco
+  // destacado si el popup viene de uno especifico, o los del calculo
+  // general si no.
+  var e2detail = document.getElementById('lead-popup-e2detail');
+  if (e2detail) {
+    if (isE2) {
+      var _src = banco || SD;
+      document.getElementById('lead-popup-e2-precio').textContent = fmt(_src.virDOP || 0);
+      document.getElementById('lead-popup-e2-monto').textContent = fmt(_src.mrDOP || 0);
+      document.getElementById('lead-popup-e2-inicial').textContent = fmt(_src.isiDOP || 0);
+      e2detail.style.display = 'block';
+    } else {
+      e2detail.style.display = 'none';
+    }
+  }
+
   // Logo/nombre del banco -- solo si multibanco esta activo y hay un banco
   // real que mostrar (bancoPorId devuelve null si no, asi que esto nunca se
   // muestra ni se rompe cuando multibanco esta apagado).
