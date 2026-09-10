@@ -1407,6 +1407,11 @@ function loadForm() {
     set('atpat', d.atpat);
     set('atrehab', d.atrehab);
 
+    var atpatWrapEl = document.getElementById('atpat-wrap');
+    if (atpatWrapEl) atpatWrapEl.style.display = d.attyp ? 'block' : 'none';
+    var atrehabWrapEl = document.getElementById('atrehab-wrap');
+    if (atrehabWrapEl) atrehabWrapEl.style.display = (d.atpat === 'patron') ? 'block' : 'none';
+
     set('tinm', d.tinm);
     set('mprecio', d.mprecio);
 
