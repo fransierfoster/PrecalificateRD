@@ -275,10 +275,10 @@ function pAct(activosDOP: number, ingDOP: number, p: Params): number {
 
 function pEdad(edad: number, p: Params): number {
   const e = p.edad;
-  if (edad >= 25 && edad <= 45) return e.e25_45;
+  if (edad >= 18 && edad <= 29) return e.e18_24;
+  if (edad >= 30 && edad <= 45) return e.e25_45;
   if (edad >= 46 && edad <= 55) return e.e46_55;
-  if (edad >= 18 && edad < 25) return e.e18_24;
-  if (edad >= 56 && edad <= 60) return e.e56_60;
+  if (edad >= 56 && edad <= 69) return e.e56_60;
   return e.mas60;
 }
 
