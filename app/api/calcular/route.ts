@@ -11,7 +11,7 @@ const DEF_TUSD = 0.0850 / 12;
 const DEF_PESOS = { dti:0.28, mora:0.20, exp:0.12, ltv:0.12, ing:0.12, est:0.10, pais:0.05, act:0.02, edad:0.01 };
 const DEF_DTI   = { p100:100, p95:95, p85:85, p72:72, p45:45, p20:20, p5:5 };
 const DEF_LTV   = { p100:100, p95:95, p88:88, p80:80, p73:73, p65:65, p52:52, p40:40, p22:22, p5:5 };
-const DEF_MORA  = { sinAtrasos:100, a30Aislado:66, a30Recurrente:39, a3160Aislado:29, a3160Recurrente:13, a60Aislado:18, a60Recurrente:9, topeRec:68 };
+const DEF_MORA  = { sinAtrasos:100, a30Aislado:66, a30Recurrente:39, a3160Aislado:29, a3160Recurrente:13, a60Aislado:18, a60Recurrente:9, topeRec:68, rehab60d:22, rehab90d:14 };
 const DEF_EXP   = { antNunca:32, antMenos1:48, ant1a3:77, ant3a5:93, antMas5:97, prodNinguno:36, prodTarjeta:59, prodPersonal:73, prodVehiculo:79, prodHipoteca:92, prodCombo:94, gap0:100, gap1:75, gap2:50, gap3:25, gap4:8 };
 const DEF_ING   = { mas200k:100, r120_200k:88, r80_120k:75, r50_80k:58, r30_50k:38, menos30k:15 };
 const DEF_EST   = { formal:94, pension:60, remesa:78, empresario:91, independiente:70, antMas5:98, ant2a5:87, ant1a2:64, antMenos1:40 };
@@ -48,7 +48,7 @@ type SimItem = { l: string; d: number; b: number };
 interface CalcInput {
   edad: number; pais: string; emp: string; ant: string; tuvoPres: boolean;
   expc: number; antCred: string; prods: string[];
-  atraw: number; atpat: string; tieneCD: boolean; activos: number;
+  atraw: number; atpat: string; atrehab: string; tieneCD: boolean; activos: number;
   ingDOP: number; deuDOP: number; ingCDDOP: number; deuCDDOP: number;
   expcCD: number; antCredCD: string; prodsCD: string[];
   atrawCD: number; atpatCD: string; empCD: string; antCD: string; paisCD: string;
@@ -78,6 +78,7 @@ function buildParamsFromMap(m: Record<string, number>): Params {
       a3160Aislado: m.mora_3160_aislado, a3160Recurrente: m.mora_3160_recurrente,
       a60Aislado: m.mora_60_aislado, a60Recurrente: m.mora_60_recurrente,
       topeRec: m.mora_tope_recurrente, topeRecCD: m.mora_tope_recurrente_cd,
+      rehab60d: m.mora_rehab_60d, rehab90d: m.mora_rehab_90d,
     },
     exp: {
       antNunca: m.exp_ant_nunca, antMenos1: m.exp_ant_menos1, ant1a3: m.exp_ant_1a3, ant3a5: m.exp_ant_3a5, antMas5: m.exp_ant_mas5,
@@ -196,12 +197,16 @@ function pLTV(ltv: number, p: Params): number {
   return l.p5;
 }
 
-function pMora(atraw: number, atpat: string, tuvoPres: boolean, p: Params): number {
+function pMora(atraw: number, atpat: string, tuvoPres: boolean, p: Params, atrehab?: string): number {
   if (!tuvoPres || atraw === 0) return p.mora.sinAtrasos;
   const aislado = atpat === 'unico';
   const m = p.mora;
   if (atraw === 30) return aislado ? m.a30Aislado : m.a30Recurrente;
-  if (atraw === 45) return aislado ? m.a3160Aislado : m.a3160Recurrente;
+  if (atraw === 45) {
+    if (!aislado && (atrehab === '6a11' || atrehab === '12mas')) return m.rehab60d;
+    return aislado ? m.a3160Aislado : m.a3160Recurrente;
+  }
+  if (!aislado && atrehab === '12mas') return m.rehab90d;
   return aislado ? m.a60Aislado : m.a60Recurrente;
 }
 
@@ -289,7 +294,7 @@ function scoreFn(
   tieneCD: boolean, ingCD: number, ingDOP: number,
   expcCD: number, antCredCD: string, prodsCD: string[],
   atrawCD: number, atpatCD: string, empCD: string, antCD: string, paisCD: string,
-  tuvoPres: boolean, p: Params, tm: number, tc: number,
+  tuvoPres: boolean, p: Params, tm: number, tc: number, atrehab?: string,
 ): ScoreResult {
   const cDOP = prDOP > 0 ? (prDOP * tm) / (1 - Math.pow(1 + tm, -240)) : 0;
   const activosDOP = activosNum || 0;
@@ -303,7 +308,7 @@ function scoreFn(
 
   const pD = pDTI(dti, p);
 
-  const pAtTit = pMora(atraw, atpat, tuvoPres, p);
+  const pAtTit = pMora(atraw, atpat, tuvoPres, p, atrehab);
   const pAtCD  = tieneCD ? pMora(atrawCD, atpatCD, atrawCD > 0, p) : 100;
   const pAtFinal = tieneCD ? (pAtTit * 0.60 + pAtCD * 0.40) : pAtTit;
 
@@ -407,7 +412,7 @@ function buildSims(
   deuDOP: number, deuCDDOP: number, tieneCD: boolean,
   atraw: number, atpat: string, tuvoPres: boolean,
   pais: string, emp: string, ant: string, expc: number, antCred: string, prods: string[],
-  edad: number, ingDOP: number, activos: number, p: Params, tm: number, tc: number,
+  edad: number, ingDOP: number, activos: number, p: Params, tm: number, tc: number, atrehab?: string,
 ): SimItem[] {
   const s = e1.sc;
   const sims: SimItem[] = [];
@@ -422,7 +427,7 @@ function buildSims(
 
   if (!tieneCD) {
     const ingCDsim = Math.round(ingDOP * 0.40);
-    const eCD = scoreFn(prDOP, iniDOP, ingTot + ingCDsim, deuDOP, 0, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, true, ingCDsim, ingDOP, 2, '1a3', ['tarjeta'], 0, 'na', 'formal', '2a5', pais, tuvoPres, p, tm, tc);
+    const eCD = scoreFn(prDOP, iniDOP, ingTot + ingCDsim, deuDOP, 0, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, true, ingCDsim, ingDOP, 2, '1a3', ['tarjeta'], 0, 'na', 'formal', '2a5', pais, tuvoPres, p, tm, tc, atrehab);
     const dlCD = Math.round(Math.min(95, eCD.sc) - s);
     if (dlCD > 0) sims.push({ l: 'Agregas un co-deudor con ingresos y buen historial al perfil combinado', d: dlCD, b: Math.min(95, s + dlCD) });
   }
@@ -471,7 +476,7 @@ function credPerfil(pExpTit: number, pAt: number, antCred: string, tuvoPres: boo
 function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullResult {
   const {
     edad, pais, emp, ant, tuvoPres, expc, antCred, prods,
-    atraw, atpat, tieneCD, activos,
+    atraw, atpat, atrehab, tieneCD, activos,
     ingDOP, deuDOP, ingCDDOP, deuCDDOP,
     expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD,
     vinmDOP, iniDOP,
@@ -488,7 +493,7 @@ function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullR
     tieneCD, ingCDDOP, ingDOP,
     expcCD, antCredCD, prodsCD,
     atrawCD, atpatCD, empCD, antCD, paisCD,
-    tuvoPres, p, tm, tc,
+    tuvoPres, p, tm, tc, atrehab,
   );
 
   // ── E2 ───────────────────────────────────────────────────────────────────
@@ -508,7 +513,7 @@ function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullR
       if (vir2 >= vinmDOP) continue;
       const mr2 = Math.max(0, vir2 - iniDOP);
       if (mr2 <= 0) break;
-      const e2t = scoreFn(mr2, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc);
+      const e2t = scoreFn(mr2, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc, atrehab);
       if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = iniDOP; e2 = e2t; }
       if (e2.sc >= 80) break;
     }
@@ -527,7 +532,7 @@ function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullR
     if (virDOP > 0) mrDOP = Math.max(0, virDOP - isiDOP);
 
     e2 = (!e2NoViable && mrDOP > 0)
-      ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc)
+      ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc, atrehab)
       : { sc: 0, cDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
 
     if (!e2NoViable) {
@@ -544,7 +549,7 @@ function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullR
               let isi2 = Math.min(iniDOP, vir2 * 0.80);
               if (isi2 < isi2min) isi2 = isi2min;
               mr2 = Math.max(0, vir2 - isi2);
-              const e2t = scoreFn(mr2, isi2, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc);
+              const e2t = scoreFn(mr2, isi2, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc, atrehab);
               if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = isi2; e2 = e2t; }
             }
           }
@@ -555,7 +560,7 @@ function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullR
 
   const e2Reached = e2.sc >= 85;
   const why = buildWhy(e1, antCred, tuvoPres, activosDOP, pais, edad);
-  const sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activosDOP, p, tm, tc);
+  const sims = buildSims(e1, prDOP, iniDOP, ingTot, deuDOP, deuCDDOP, tieneCD, atraw, atpat, tuvoPres, pais, emp, ant, expc, antCred, prods, edad, ingDOP, activosDOP, p, tm, tc, atrehab);
   const cp = credPerfil(e1.pExpTit, e1.pAt, antCred, tuvoPres);
 
   return { e1, e2, why, sims, cp, virDOP, mrDOP, isiDOP, prDOP, e2Reached, e2NoViable, virDOPMin };
@@ -568,7 +573,7 @@ export async function POST(req: NextRequest) {
 
     const {
       edad, pais, emp, ant, tuvoPres, expc, antCred, prods,
-      atraw, atpat, tieneCD, activos,
+      atraw, atpat, atrehab, tieneCD, activos,
       ingDOP, deuDOP, ingCDDOP, deuCDDOP,
       expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD,
       vinmDOP, iniDOP, mr,
@@ -606,14 +611,14 @@ export async function POST(req: NextRequest) {
         tieneCD, ingCDDOP, ingDOP,
         expcCD, antCredCD, prodsCD,
         atrawCD, atpatCD, empCD, antCD, paisCD,
-        tuvoPres, pSlider, tmSlider, tc,
+        tuvoPres, pSlider, tmSlider, tc, atrehab,
       );
       return NextResponse.json({ sc: e1.sc, cDOP: e1.cDOP });
     }
 
     const input: CalcInput = {
       edad, pais, emp, ant, tuvoPres, expc, antCred, prods,
-      atraw, atpat, tieneCD, activos,
+      atraw, atpat, atrehab, tieneCD, activos,
       ingDOP, deuDOP, ingCDDOP, deuCDDOP,
       expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD,
       vinmDOP, iniDOP, mr,

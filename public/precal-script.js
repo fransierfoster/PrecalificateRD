@@ -1157,7 +1157,7 @@ function updSl() {
       body: JSON.stringify({
         edad: SD.edad, pais: SD.pais, emp: SD.emp, ant: SD.ant, tuvoPres: SD.tuvoPres,
         expc: SD.expc, antCred: SD.antCred || 'nunca', prods: SD.prods,
-        atraw: SD.atraw, atpat: SD.atpat, tieneCD: SD.tieneCD, activos: SD.activos,
+        atraw: SD.atraw, atpat: SD.atpat, atrehab: SD.atrehab, tieneCD: SD.tieneCD, activos: SD.activos,
         ingDOP: SD.ingDOP, deuDOP: SD.deuDOP, ingCDDOP: SD.ingCDDOP, deuCDDOP: SD.deuCDDOP,
         expcCD: SD.expcCD, antCredCD: SD.antCredCD || 'nunca', prodsCD: SD.prodsCD || ['ninguno'],
         atrawCD: SD.atrawCD, atpatCD: SD.atpatCD, empCD: SD.empCD, antCD: SD.antCD, paisCD: SD.paisCD,
@@ -1365,6 +1365,7 @@ function saveForm() {
       atval: ATVAL,
       attyp: document.getElementById('attyp').value,
       atpat: document.getElementById('atpat').value,
+      atrehab: document.getElementById('atrehab').value,
       tinm: document.getElementById('tinm').value,
       mprecio: document.getElementById('mprecio').value,
       vinm: document.getElementById('vinm').value,
@@ -1404,6 +1405,7 @@ function loadForm() {
 
     set('attyp', d.attyp);
     set('atpat', d.atpat);
+    set('atrehab', d.atrehab);
 
     set('tinm', d.tinm);
     set('mprecio', d.mprecio);
@@ -1451,6 +1453,7 @@ function calc() {
   var prods = tuvoPres ? getProds('prod') : ['ninguno'];
   var atraw = (!tuvoPres || ATVAL === 'no') ? 0 : (parseInt(document.getElementById('attyp').value) || 30);
   var atpat = atraw > 0 ? (document.getElementById('atpat').value || 'unico') : 'na';
+  var atrehab = (atpat === 'patron') ? (document.getElementById('atrehab').value || '') : '';
   var tieneCD = document.getElementById('cdtog').checked;
   var activos = pn('activos');
 
@@ -1479,7 +1482,7 @@ function calc() {
     body: JSON.stringify({
       edad: edad, pais: pais, emp: emp, ant: ant, tuvoPres: tuvoPres,
       expc: expc, antCred: antCred, prods: prods,
-      atraw: atraw, atpat: atpat, tieneCD: tieneCD, activos: activos,
+      atraw: atraw, atpat: atpat, atrehab: atrehab, tieneCD: tieneCD, activos: activos,
       ingDOP: ingDOP, deuDOP: deuDOP, ingCDDOP: ingCDDOP, deuCDDOP: deuCDDOP,
       expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
       atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
@@ -1513,7 +1516,7 @@ function calc() {
       vinmDOP: vinmDOP, iniDOP: iniDOP, prDOP: res.prDOP, mrDOP: res.mrDOP, virDOP: res.virDOP, isiDOP: res.isiDOP,
       ingTot: ingDOP + ingCDDOP, deuDOP: deuDOP, deuCDDOP: deuCDDOP,
       pais: pais, emp: emp, ant: ant, expc: expc, antCred: antCred, prods: prods,
-      atraw: atraw, atpat: atpat, activos: activos, edad: edad, tuvoPres: tuvoPres,
+      atraw: atraw, atpat: atpat, atrehab: atrehab, activos: activos, edad: edad, tuvoPres: tuvoPres,
       tieneCD: tieneCD, ingCDDOP: ingCDDOP, ingDOP: ingDOP,
       expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
       atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
