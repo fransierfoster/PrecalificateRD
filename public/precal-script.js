@@ -1051,8 +1051,19 @@ function showLeadPopup(sc, isE2, banco) {
       document.getElementById('lead-popup-e2-monto').textContent = fmt(_src.mrDOP || 0);
       document.getElementById('lead-popup-e2-inicial').textContent = fmt(_src.isiDOP || 0);
       e2detail.style.display = 'block';
+      var cuotaEl = document.getElementById('lead-popup-e2-cuota');
+      if (cuotaEl) {
+        if (_src.e2 && _src.e2.cDOP) {
+          cuotaEl.textContent = 'Cuota estimada: ' + fmt(_src.e2.cDOP) + '/mes';
+          cuotaEl.style.display = 'block';
+        } else {
+          cuotaEl.style.display = 'none';
+        }
+      }
     } else {
       e2detail.style.display = 'none';
+      var cuotaElOff = document.getElementById('lead-popup-e2-cuota');
+      if (cuotaElOff) cuotaElOff.style.display = 'none';
     }
   }
 
