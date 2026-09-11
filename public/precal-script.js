@@ -1768,11 +1768,8 @@ function togOfertas() {
 
 // -- CONFIGURACION UI --
 function applyUIParams(contadorVisible) {
-  var solEl = document.getElementById('contador-solicitudes');
-  if (solEl) {
-    var solBlk = solEl.parentElement;
-    if (solBlk) solBlk.style.display = contadorVisible ? '' : 'none';
-  }
+  var solBlk = document.getElementById('solicitudes-block');
+  if (solBlk) solBlk.style.display = contadorVisible ? '' : 'none';
 }
 
 // Parámetros y funciones de scoring removidos del cliente — ver /app/api/calcular/route.ts
