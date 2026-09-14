@@ -365,10 +365,10 @@ function buildWhy(e: ScoreResult, antCred: string, tuvoPres: boolean, activos: n
   const w: WhyItem[] = [];
   const dtiPct = Math.round(e.dti * 100);
 
-  if (e.pD >= 85) w.push({ t: 'ok', x: 'Excelente capacidad de endeudamiento', s: `El porcentaje de tus ingresos que va a deudas es ${dtiPct}%. Esta dentro del rango ideal (menos del 33%).` });
-  else if (e.pD >= 72) w.push({ t: 'ok', x: 'Buena capacidad de endeudamiento', s: `El porcentaje de endeudamiento es ${dtiPct}%. Dentro del rango aceptable (33-40%). Hay margen con buen perfil general.` });
-  else if (e.pD >= 45) w.push({ t: 'w', x: 'Capacidad de endeudamiento ajustada', s: `El porcentaje de endeudamiento es ${dtiPct}%. Supera el 40% maximo aceptado. Reducir deudas mejoraría tu perfil.` });
-  else w.push({ t: 'b', x: 'Capacidad de endeudamiento insuficiente', s: `El porcentaje de endeudamiento es ${dtiPct}%. Muy por encima del limite. Es el principal obstaculo.` });
+  if (e.pD >= 85) w.push({ t: 'ok', x: 'Excelente capacidad de endeudamiento', s: `El porcentaje de tus ingresos que va a deudas es ${dtiPct}%. Es un nivel muy favorable para las entidades financieras.` });
+  else if (e.pD >= 72) w.push({ t: 'ok', x: 'Buena capacidad de endeudamiento', s: `El porcentaje de endeudamiento es ${dtiPct}%. Es un nivel aceptable; con buen perfil general tienes margen.` });
+  else if (e.pD >= 45) w.push({ t: 'w', x: 'Capacidad de endeudamiento ajustada', s: `El porcentaje de endeudamiento es ${dtiPct}%. Reducir tus deudas actuales mejoraría tu perfil.` });
+  else w.push({ t: 'b', x: 'Capacidad de endeudamiento insuficiente', s: `El porcentaje de endeudamiento es ${dtiPct}%. Es el principal obstáculo en tu perfil actual.` });
 
   if (!tuvoPres) {
     w.push({ t: 'w', x: 'Sin historial de prestamos previos', s: 'No haber tenido prestamos antes puede requerir un co-deudor con experiencia. Con buenos ingresos y estabilidad, muchos bancos aprueban con condiciones.' });
