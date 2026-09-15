@@ -422,38 +422,38 @@ function buildSims(
     const d2 = (deuDOP * 0.5 + cDOP + deuCDDOP) / Math.max(ingTot, 1);
     const pD2 = pDTI(d2, p);
     const dl = Math.round(Math.min(95, s - e1.pD * getPeso('dti', p) + pD2 * getPeso('dti', p)) - s);
-    if (dl > 0) sims.push({ l: 'Reduces tus deudas actuales en un 50%', d: dl, b: Math.min(95, s + dl) });
+    if (dl > 0) sims.push({ l: 'Reducir tus deudas actuales en un 50%', d: dl, b: Math.min(95, s + dl) });
   }
 
   if (!tieneCD) {
     const ingCDsim = Math.round(ingDOP * 0.40);
     const eCD = scoreFn(prDOP, iniDOP, ingTot + ingCDsim, deuDOP, 0, pais, emp, ant, expc, antCred, prods, atraw, atpat, activos, edad, true, ingCDsim, ingDOP, 2, '1a3', ['tarjeta'], 0, 'na', 'formal', '2a5', pais, tuvoPres, p, tm, tc, atrehab);
     const dlCD = Math.round(Math.min(95, eCD.sc) - s);
-    if (dlCD > 0) sims.push({ l: 'Agregas un co-deudor con ingresos y buen historial al perfil combinado', d: dlCD, b: Math.min(95, s + dlCD) });
+    if (dlCD > 0) sims.push({ l: 'Agregar un co-deudor con ingresos y buen historial al perfil combinado', d: dlCD, b: Math.min(95, s + dlCD) });
   }
 
   if (e1.pExpTit < 80 && tuvoPres) {
     const dl3 = Math.round(Math.min(95, s - e1.pExp * getPeso('exp', p) + 100 * getPeso('exp', p)) - s);
-    if (dl3 > 0) sims.push({ l: 'Construyes historial crediticio en el rango del monto solicitado', d: dl3, b: Math.min(95, s + dl3) });
+    if (dl3 > 0) sims.push({ l: 'Construir historial crediticio en el rango del monto solicitado', d: dl3, b: Math.min(95, s + dl3) });
   }
 
   if (atraw > 0 && tuvoPres) {
     const dl4 = Math.round(Math.min(95, s - e1.pAtFinal * getPeso('mora', p) + 100 * getPeso('mora', p)) - s);
-    if (dl4 > 0) sims.push({ l: 'Mantienes pagos al dia por 12 meses consecutivos', d: dl4, b: Math.min(95, s + dl4) });
+    if (dl4 > 0) sims.push({ l: 'Mantener pagos al día por 12 meses consecutivos', d: dl4, b: Math.min(95, s + dl4) });
   }
 
   if (e1.pL < 88) {
     const ltvSim = Math.max(0, e1.ltv - 0.05);
     const pL2 = pLTV(ltvSim, p);
     const dl5 = Math.round(Math.min(95, s - e1.pL * getPeso('ltv', p) + pL2 * getPeso('ltv', p)) - s);
-    if (dl5 > 0) sims.push({ l: 'Aumentas tu inicial en 5 puntos porcentuales adicionales', d: dl5, b: Math.min(95, s + dl5) });
+    if (dl5 > 0) sims.push({ l: 'Aumentar tu inicial en 5 puntos porcentuales adicionales', d: dl5, b: Math.min(95, s + dl5) });
   }
 
   if (!activos || activos <= 0) {
     const actBase = p.act.noDeclara;
     const actSim  = p.act.menos10;
     const dl6 = Math.round(Math.min(95, s - actBase * getPeso('act', p) + actSim * getPeso('act', p)) - s);
-    if (dl6 > 0) sims.push({ l: 'Declaras ingresos adicionales verificables', d: dl6, b: Math.min(95, s + dl6) });
+    if (dl6 > 0) sims.push({ l: 'Declarar ingresos adicionales verificables', d: dl6, b: Math.min(95, s + dl6) });
   }
 
   if (sims.length === 0) sims.push({ l: 'Tu perfil esta bien optimizado', d: 0, b: s });
