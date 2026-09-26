@@ -4,9 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 export const runtime = 'nodejs';
 
 // ── DEFAULTS (usados si Supabase falla) ──────────────────────────────────────
-const DEF_TC   = 60;
-const DEF_TDOP = 0.1193 / 12;
-const DEF_TUSD = 0.0850 / 12;
+export const DEF_TC   = 60;
+export const DEF_TDOP = 0.1193 / 12;
+export const DEF_TUSD = 0.0850 / 12;
 
 const DEF_PESOS = { dti:0.28, mora:0.20, exp:0.12, ltv:0.12, ing:0.12, est:0.10, pais:0.05, act:0.02, edad:0.01 };
 const DEF_DTI   = { p100:100, p95:95, p85:85, p72:72, p45:45, p20:20, p5:5 };
@@ -20,7 +20,7 @@ const DEF_ACT   = { noDeclara:41, menos10:57, r10_30:75, mas30:86 };
 const DEF_EDAD  = { e18_24:35, e25_45:81, e46_55:89, e56_60:66, mas60:50 };
 
 // ── TIPOS ────────────────────────────────────────────────────────────────────
-interface Params {
+export interface Params {
   pesos: typeof DEF_PESOS;
   dti: typeof DEF_DTI;
   ltv: typeof DEF_LTV;
@@ -45,7 +45,7 @@ interface ScoreResult {
 type WhyItem = { t: string; x: string; s: string };
 type SimItem = { l: string; d: number; b: number };
 
-interface CalcInput {
+export interface CalcInput {
   edad: number; pais: string; emp: string; ant: string; tuvoPres: boolean;
   expc: number; antCred: string; prods: string[];
   atraw: number; atpat: string; atrehab: string; tieneCD: boolean; activos: number;
@@ -55,7 +55,7 @@ interface CalcInput {
   vinmDOP: number; iniDOP: number; mr: string;
 }
 
-interface FullResult {
+export interface FullResult {
   e1: ScoreResult; e2: ScoreResult; why: WhyItem[]; sims: SimItem[];
   cp: { c: string; t: string };
   virDOP: number; mrDOP: number; isiDOP: number; prDOP: number;
@@ -63,7 +63,7 @@ interface FullResult {
 }
 
 // ── PARÁMETROS: mapa plano (Supabase) → objeto Params anidado ───────────────
-function buildParamsFromMap(m: Record<string, number>): Params {
+export function buildParamsFromMap(m: Record<string, number>): Params {
   return {
     pesos: {
       dti: m.peso_dti / 100, mora: m.peso_mora / 100, exp: m.peso_exp / 100,
@@ -101,7 +101,7 @@ function buildParamsFromMap(m: Record<string, number>): Params {
   };
 }
 
-function defaultParams(): Params {
+export function defaultParams(): Params {
   return {
     pesos: DEF_PESOS, dti: DEF_DTI, ltv: DEF_LTV, mora: DEF_MORA,
     exp: DEF_EXP, ing: DEF_ING, est: DEF_EST, pais: DEF_PAIS,
@@ -112,7 +112,7 @@ function defaultParams(): Params {
 }
 
 // ── CARGA PARÁMETROS DESDE SUPABASE ─────────────────────────────────────────
-async function loadFlatParams(): Promise<Record<string, number> | null> {
+export async function loadFlatParams(): Promise<Record<string, number> | null> {
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -473,7 +473,7 @@ function credPerfil(pExpTit: number, pAt: number, antCred: string, tuvoPres: boo
 
 // ── CÁLCULO COMPLETO (E1 + E2 + why + sims + cp) para un set de parámetros ──
 // Extraído para poder reutilizarlo tal cual con los parámetros de cada banco.
-function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullResult {
+export function computeFull(input: CalcInput, p: Params, tm: number, tc: number): FullResult {
   const {
     edad, pais, emp, ant, tuvoPres, expc, antCred, prods,
     atraw, atpat, atrehab, tieneCD, activos,

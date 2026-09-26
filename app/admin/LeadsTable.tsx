@@ -4,6 +4,8 @@ import { Fragment, useMemo, useState } from 'react';
 import { updateLead, deleteLead } from './actions';
 import DeleteButton from './DeleteButton';
 import { type Calculo, EMP_LABELS, ANT_LABELS, ATRASO_LABELS } from './CalculosTable';
+import LeadComments, { type Comentario } from './LeadComments';
+import SendLeadEmail from './SendLeadEmail';
 
 export type Lead = {
   id: string;
@@ -42,7 +44,7 @@ function csvEscape(value: string) {
   return value;
 }
 
-function LeadDetail({ c }: { c: Calculo }) {
+export function LeadDetail({ c }: { c: Calculo }) {
   return (
     <div className="adm-lead-detail">
       <div className="adm-lead-detail-col">
@@ -85,7 +87,7 @@ function LeadDetail({ c }: { c: Calculo }) {
   );
 }
 
-export default function LeadsTable({ leads }: { leads: Lead[] }) {
+export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]; comentariosByLead: Record<string, Comentario[]> }) {
   const [scoreMin, setScoreMin] = useState('');
   const [scoreMax, setScoreMax] = useState('');
   const [contactado, setContactado] = useState('todos');
@@ -272,6 +274,12 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
                     <tr>
                       <td colSpan={9} style={{ padding: 0 }}>
                         <LeadDetail c={c} />
+                        <div className="adm-lead-detail">
+                          <SendLeadEmail leadId={lead.id} />
+                        </div>
+                        <div className="adm-lead-detail">
+                          <LeadComments leadId={lead.id} comentarios={comentariosByLead[lead.id] || []} />
+                        </div>
                       </td>
                     </tr>
                   )}

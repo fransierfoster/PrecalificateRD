@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { signOut } from './actions';
 import LeadsTable, { type Lead } from './LeadsTable';
+import LeadsRestrictedView from './LeadsRestrictedView';
+import { type Comentario } from './LeadComments';
+import AccesosLeadsPanel, { type AccesoLeads } from './AccesosLeadsPanel';
 import CalculosTable, { type Calculo } from './CalculosTable';
 import ParamForm from './ParamForm';
 import ToggleParamForm from './ToggleParamForm';
@@ -117,11 +121,51 @@ export default async function AdminPage() {
 
   const { data: admin } = await supabase
     .from('admins')
-    .select('email')
+    .select('email, role')
     .eq('email', userData.user.email)
     .maybeSingle();
 
   if (!admin) redirect('/admin/login');
+
+  // Acceso restringido: solo ve leads + puede comentar, nada mas. Se corta
+  // aqui mismo antes de cargar/renderizar el resto del panel (parametros,
+  // bancos, anuncios, etc.) para que ni siquiera exista un camino en el
+  // cliente hacia esas acciones -- la unica proteccion real sigue siendo la
+  // policy de RLS, pero esto evita exponer esa UI de entrada.
+  if (admin.role === 'leads') {
+    const { data: leadsRestringido } = await supabase
+      .from('precalifica_leads')
+      .select('*, precalifica_calculos(*)')
+      .order('created_at', { ascending: false })
+      .returns<Lead[]>();
+
+    const { data: comentariosData } = await supabase
+      .from('precalifica_lead_comentarios')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .returns<Comentario[]>();
+
+    const comentariosByLead: Record<string, Comentario[]> = {};
+    (comentariosData || []).forEach((c) => {
+      if (!comentariosByLead[c.lead_id]) comentariosByLead[c.lead_id] = [];
+      comentariosByLead[c.lead_id].push(c);
+    });
+
+    return (
+      <div className="adm-page">
+        <div className="adm-header">
+          <h1>PrecalificateRD — Leads</h1>
+          <form action={signOut}>
+            <button type="submit" className="adm-logout">Cerrar sesión</button>
+          </form>
+        </div>
+        <div className="adm-card">
+          <h2>Leads ({leadsRestringido?.length || 0})</h2>
+          <LeadsRestrictedView leads={leadsRestringido || []} comentariosByLead={comentariosByLead} />
+        </div>
+      </div>
+    );
+  }
 
   const { data: parametros } = await supabase
     .from('precalifica_parametros')
@@ -135,6 +179,35 @@ export default async function AdminPage() {
     .select('*, precalifica_calculos(*)')
     .order('created_at', { ascending: false })
     .returns<Lead[]>();
+
+  const { data: comentariosData } = await supabase
+    .from('precalifica_lead_comentarios')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .returns<Comentario[]>();
+
+  const comentariosByLead: Record<string, Comentario[]> = {};
+  (comentariosData || []).forEach((c) => {
+    if (!comentariosByLead[c.lead_id]) comentariosByLead[c.lead_id] = [];
+    comentariosByLead[c.lead_id].push(c);
+  });
+
+  // Listar los accesos restringidos ("Accesos de leads") requiere el
+  // service role, ya que la policy de RLS de `admins` solo deja leer la
+  // propia fila -- correcto para el chequeo de login, pero no alcanza para
+  // este panel de administracion.
+  let accesosLeads: AccesoLeads[] = [];
+  try {
+    const adminSb = createAdminClient();
+    const { data: accesosData } = await adminSb
+      .from('admins')
+      .select('email, user_id')
+      .eq('role', 'leads');
+    accesosLeads = accesosData || [];
+  } catch {
+    // SUPABASE_SERVICE_ROLE_KEY no configurada todavia -- el panel se
+    // muestra vacio en vez de romper el resto del admin.
+  }
 
   const { data: calculos } = await supabase
     .from('precalifica_calculos')
@@ -405,7 +478,16 @@ export default async function AdminPage() {
         <details className="adm-section-details">
           <summary><h2 style={{ display: 'inline' }}>Leads ({leads?.length || 0})</h2></summary>
           <div style={{ marginTop: 14 }}>
-            <LeadsTable leads={leads || []} />
+            <LeadsTable leads={leads || []} comentariosByLead={comentariosByLead} />
+          </div>
+        </details>
+      </div>
+
+      <div className="adm-card">
+        <details className="adm-section-details">
+          <summary><h2 style={{ display: 'inline' }}>Accesos de leads ({accesosLeads.length})</h2></summary>
+          <div style={{ marginTop: 14 }}>
+            <AccesosLeadsPanel accesos={accesosLeads} />
           </div>
         </details>
       </div>
