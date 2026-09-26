@@ -258,10 +258,10 @@ function updPrecio() {
 function autoIni() {
   var vinmRaw = pn('vinm');
   if (!vinmRaw) return;
-  var ini10 = Math.round(vinmRaw * 0.10);
+  var ini20 = Math.round(vinmRaw * 0.20);
   var iniEl = document.getElementById('ini');
   if (iniEl) {
-    iniEl.value = ini10.toLocaleString('en-US');
+    iniEl.value = ini20.toLocaleString('en-US');
   }
 }
 
