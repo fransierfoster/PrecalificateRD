@@ -65,6 +65,7 @@ export default function LeadsRestrictedView({ leads, comentariosByLead }: { lead
               <th>Documento</th>
               <th>Referencia / Tipo</th>
               <th>Resultado</th>
+              <th>Referido</th>
               <th></th>
             </tr>
           </thead>
@@ -97,6 +98,11 @@ export default function LeadsRestrictedView({ leads, comentariosByLead }: { lead
                         </>
                       ) : <span className="adm-empty">sin datos</span>}
                     </td>
+                    <td data-label="Referido">
+                      <span className={`adm-pill ${lead.referido_asesor ? 'adm-pill-green' : 'adm-pill-gray'}`}>
+                        {lead.referido_asesor ? '🎯 Sí' : 'No'}
+                      </span>
+                    </td>
                     <td data-label="">
                       {c && (
                         <button type="button" className="adm-btn" onClick={() => toggleExpanded(lead.id)}>
@@ -107,7 +113,7 @@ export default function LeadsRestrictedView({ leads, comentariosByLead }: { lead
                   </tr>
                   {isOpen && c && (
                     <tr>
-                      <td colSpan={6} style={{ padding: 0 }}>
+                      <td colSpan={7} style={{ padding: 0 }}>
                         <LeadDetail c={c} />
                         <div className="adm-lead-detail">
                           <SendLeadEmail leadId={lead.id} />

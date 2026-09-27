@@ -18,6 +18,7 @@ export type Lead = {
   doc_numero: string | null;
   quiere_ofertas: boolean | null;
   contactado: boolean | null;
+  referido_asesor: boolean | null;
   asesor_asignado: string | null;
   resultado_banco: string | null;
   notas: string | null;
@@ -116,7 +117,7 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
   }, [leads, scoreMin, scoreMax, contactado, moneda]);
 
   function exportCSV() {
-    const headers = ['Fecha', 'Nombre', 'Apellido', 'Telefono', 'Email', 'Documento', 'Referencia', 'Tipo', 'Moneda', 'Monto', 'Score E1', 'Score E2', 'Capacidad de endeudamiento', 'Quiere ofertas', 'Contactado', 'Asesor asignado', 'Resultado banco', 'Notas'];
+    const headers = ['Fecha', 'Nombre', 'Apellido', 'Telefono', 'Email', 'Documento', 'Referencia', 'Tipo', 'Moneda', 'Monto', 'Score E1', 'Score E2', 'Capacidad de endeudamiento', 'Quiere ofertas', 'Contactado', 'Referido a asesor', 'Asesor asignado', 'Resultado banco', 'Notas'];
     const rows = filtered.map((lead) => {
       const c = lead.precalifica_calculos;
       return [
@@ -135,6 +136,7 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
         c?.dti != null ? (c.dti * 100).toFixed(0) : '',
         lead.quiere_ofertas ? 'Si' : 'No',
         lead.contactado ? 'Si' : 'No',
+        lead.referido_asesor ? 'Si' : 'No',
         lead.asesor_asignado || '',
         lead.resultado_banco || '',
         lead.notas || '',
@@ -202,6 +204,7 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
               <th>Referencia / Tipo</th>
               <th>Resultado</th>
               <th>Ofertas</th>
+              <th>Referido</th>
               <th>Seguimiento</th>
               <th></th>
               <th></th>
@@ -243,6 +246,11 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
                         {lead.quiere_ofertas ? 'Sí' : 'No'}
                       </span>
                     </td>
+                    <td data-label="Referido">
+                      <span className={`adm-pill ${lead.referido_asesor ? 'adm-pill-green' : 'adm-pill-gray'}`}>
+                        {lead.referido_asesor ? '🎯 Sí' : 'No'}
+                      </span>
+                    </td>
                     <td data-label="Seguimiento">
                       <form action={updateLead} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 160 }}>
                         <input type="hidden" name="id" value={lead.id} />
@@ -269,7 +277,7 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
                   </tr>
                   {isOpen && c && (
                     <tr>
-                      <td colSpan={9} style={{ padding: 0 }}>
+                      <td colSpan={10} style={{ padding: 0 }}>
                         <LeadDetail c={c} />
                         <div className="adm-lead-detail">
                           <SendLeadEmail leadId={lead.id} />

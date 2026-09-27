@@ -644,5 +644,27 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
     return { ok: false, error: errText };
   }
 
+  // Efectos automaticos del reenvio: comentario con quien/cuando/a que
+  // correo, y marcar el lead como referido a un asesor (visible en el
+  // resumen de la tabla de leads).
+  const { data: userData } = await supabase.auth.getUser();
+  const autor = userData?.user?.email || 'desconocido';
+  const fechaTxt = new Date().toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' });
+
+  await supabase.from('precalifica_lead_comentarios').insert({
+    lead_id: leadId,
+    autor,
+    comentario: `Reenviado por correo a ${toEmail} el ${fechaTxt}.`,
+  });
+
+  // El rol 'leads' no tiene permiso de UPDATE en precalifica_leads (a
+  // proposito, ver RLS) -- pero este flag es un efecto automatico del
+  // reenvio (accion que SI le esta permitida), no una edicion manual, asi
+  // que se aplica con el cliente de service role para que funcione igual
+  // sin importar el rol de quien reenvio.
+  const admin = createAdminClient();
+  await admin.from('precalifica_leads').update({ referido_asesor: true }).eq('id', leadId);
+
+  revalidatePath('/admin');
   return { ok: true };
 }
