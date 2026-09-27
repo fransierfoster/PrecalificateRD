@@ -109,7 +109,7 @@ export default function AccesosLeadsPanel({ accesos }: { accesos: AccesoLeads[] 
   return (
     <div>
       <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 12px' }}>
-        Crea accesos con correo y contraseña que tú elijas. Esa persona entra por el mismo login del admin, pero solo ve la lista de leads y puede agregar comentarios de seguimiento — no puede editar, eliminar ni reenviar correos.
+        Crea accesos con correo y contraseña que tú elijas. Esa persona entra por el mismo login del admin, pero solo ve la lista de leads, puede agregar comentarios de seguimiento y reenviar el detalle por correo — no puede editar ni eliminar nada.
       </p>
       <CrearAccesoForm />
       {accesos.length === 0 ? (

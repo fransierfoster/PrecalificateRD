@@ -214,14 +214,14 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
               return (
                 <Fragment key={lead.id}>
                   <tr>
-                    <td>{new Date(lead.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                    <td>
+                    <td data-label="Fecha">{new Date(lead.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td data-label="Contacto">
                       <strong>{lead.nombre} {lead.apellido}</strong><br />
                       {lead.telefono}<br />
                       {lead.email}
                     </td>
-                    <td>{lead.doc_tipo} {lead.doc_numero}</td>
-                    <td>
+                    <td data-label="Documento">{lead.doc_tipo} {lead.doc_numero}</td>
+                    <td data-label="Referencia / Tipo">
                       <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#374151', display: 'block', marginBottom: 4 }}>
                         {refNum(lead)}
                       </span>
@@ -229,7 +229,7 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
                         {lead.tipo === 'pdf' ? '📄 PDF' : '💬 Asesoría'}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Resultado">
                       {c ? (
                         <>
                           {fmtMoney(c.vinm_dop, c.moneda_resultado)}<br />
@@ -238,31 +238,28 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
                         </>
                       ) : <span className="adm-empty">sin datos</span>}
                     </td>
-                    <td>
+                    <td data-label="Ofertas">
                       <span className={`adm-pill ${lead.quiere_ofertas ? 'adm-pill-green' : 'adm-pill-gray'}`}>
                         {lead.quiere_ofertas ? 'Sí' : 'No'}
                       </span>
                     </td>
-                    <td>
-                      <form action={updateLead} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+                    <td data-label="Seguimiento">
+                      <form action={updateLead} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 160 }}>
                         <input type="hidden" name="id" value={lead.id} />
                         <label style={{ fontSize: 12 }}>
                           <input type="checkbox" name="contactado" defaultChecked={!!lead.contactado} /> Contactado
                         </label>
-                        <input type="text" name="asesor_asignado" placeholder="Asesor asignado" defaultValue={lead.asesor_asignado || ''} />
-                        <input type="text" name="resultado_banco" placeholder="Resultado banco" defaultValue={lead.resultado_banco || ''} />
-                        <textarea name="notas" placeholder="Notas" defaultValue={lead.notas || ''} />
                         <button type="submit" className="adm-btn adm-btn-primary">Guardar</button>
                       </form>
                     </td>
-                    <td>
+                    <td data-label="">
                       {c && (
                         <button type="button" className="adm-btn" onClick={() => toggleExpanded(lead.id)}>
                           {isOpen ? '▾ Ocultar' : '▸ Ver perfil'}
                         </button>
                       )}
                     </td>
-                    <td>
+                    <td data-label="">
                       <DeleteButton
                         id={lead.id}
                         action={deleteLead}

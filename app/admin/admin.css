@@ -635,3 +635,70 @@
   color: var(--blk);
   font-weight: 700;
 }
+
+/* ── Móvil: tablas de Leads y Cálculos como tarjetas verticales ──────────
+   En vez de forzar scroll horizontal, cada fila se convierte en una
+   tarjeta y cada celda se apila con su etiqueta arriba (via data-label).
+   El botón "Ver perfil" (ya existente) sigue siendo la forma de ver el
+   detalle completo, ahora dentro de la tarjeta en vez de una fila ancha. */
+@media (max-width: 768px) {
+  .adm-page {
+    padding: 16px 12px 40px;
+  }
+
+  .adm-card {
+    padding: 14px;
+  }
+
+  .adm-table-wrap {
+    overflow-x: visible;
+  }
+
+  .adm-table thead {
+    display: none;
+  }
+
+  .adm-table, .adm-table tbody, .adm-table tr, .adm-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .adm-table tr {
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: #fff;
+  }
+
+  .adm-table td {
+    border-bottom: none;
+    padding: 7px 0;
+  }
+
+  .adm-table td:not(:last-child) {
+    border-bottom: 1px dashed #f0f0f0;
+  }
+
+  .adm-table td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    color: #9CA3AF;
+    margin-bottom: 3px;
+  }
+
+  /* La columna de Seguimiento ya trae su propio formulario con labels
+     inline -- el data-label de arriba alcanza, no hace falta duplicar. */
+  .adm-table td[data-label="Seguimiento"] form {
+    min-width: 0;
+  }
+
+  .adm-lead-detail {
+    padding: 14px 12px;
+    grid-template-columns: 1fr;
+  }
+}

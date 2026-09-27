@@ -40,14 +40,15 @@ export async function updateParametro(formData: FormData): Promise<{ ok: boolean
 export async function updateLead(formData: FormData) {
   const id = String(formData.get('id'));
 
+  // Asesor asignado / Resultado banco / Notas se quitaron del formulario --
+  // los comentarios de seguimiento (precalifica_lead_comentarios) los
+  // reemplazan. Ya NO se incluyen en este update para no pisar con "" el
+  // historico que algun lead pudiera tener guardado en esas columnas.
   const supabase = await createClient();
   await supabase
     .from('precalifica_leads')
     .update({
       contactado: formData.get('contactado') === 'on',
-      asesor_asignado: String(formData.get('asesor_asignado') || ''),
-      resultado_banco: String(formData.get('resultado_banco') || ''),
-      notas: String(formData.get('notas') || ''),
     })
     .eq('id', id);
 
@@ -70,6 +71,24 @@ async function requireFullAdmin(): Promise<string | null> {
     .maybeSingle();
 
   if (!admin || admin.role !== 'full') return 'No autorizado';
+  return null;
+}
+
+// Reenviar correo si esta disponible para cualquier admin (full o leads) --
+// solo confirma que hay una sesion valida registrada en `admins`, sin
+// restringir por rol.
+async function requireAnyAdmin(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData?.user?.email) return 'No autenticado';
+
+  const { data: admin } = await supabase
+    .from('admins')
+    .select('role')
+    .eq('email', userData.user.email)
+    .maybeSingle();
+
+  if (!admin) return 'No autorizado';
   return null;
 }
 
@@ -473,7 +492,7 @@ function fmtMoneyEmail(n: number | null | undefined, currency: string) {
 }
 
 export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean; error?: string }> {
-  const roleErr = await requireFullAdmin();
+  const roleErr = await requireAnyAdmin();
   if (roleErr) return { ok: false, error: roleErr };
 
   const leadId = String(formData.get('lead_id') || '');
@@ -490,6 +509,12 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
     .eq('id', leadId)
     .maybeSingle();
   if (leadErr || !lead) return { ok: false, error: leadErr?.message || 'Lead no encontrado' };
+
+  const { data: comentarios } = await supabase
+    .from('precalifica_lead_comentarios')
+    .select('autor, comentario, created_at')
+    .eq('lead_id', leadId)
+    .order('created_at', { ascending: true });
 
   const c = lead.precalifica_calculos;
   if (!c) return { ok: false, error: 'Este lead no tiene un cálculo asociado' };
@@ -579,6 +604,12 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
   const sectionHtml = (title: string, content: string) =>
     content ? `<h3 style="margin:18px 0 6px;font-size:14px;color:#C0161C;">${title}</h3>${content}` : '';
 
+  const comentariosHtml = (comentarios || []).map((cm) =>
+    `<div style="margin-bottom:8px;padding:8px 12px;border-radius:6px;background:#F9FAFB;border-left:3px solid #C0161C;">
+      <div style="font-size:11px;color:#6B7280;margin-bottom:3px;"><strong>${cm.autor}</strong> · ${new Date(cm.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</div>
+      <div style="font-size:12px;color:#333;white-space:pre-wrap;">${cm.comentario}</div>
+    </div>`).join('');
+
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
       <div style="background:#0D0D0D;padding:16px 20px;border-radius:10px 10px 0 0;">
@@ -593,6 +624,7 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
         ${section('📊 Historial y experiencia crediticia', histRows)}
         ${sectionHtml('🔍 ¿Por qué este resultado?', whyHtml)}
         ${sectionHtml('📈 Acciones para mejorar la probabilidad', simsHtml)}
+        ${sectionHtml('💬 Comentarios de seguimiento', comentariosHtml)}
       </div>
     </div>`;
 

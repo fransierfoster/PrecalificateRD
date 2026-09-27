@@ -223,37 +223,37 @@ export default function CalculosTable({ calculos }: { calculos: Calculo[] }) {
           <tbody>
             {filtered.map((c) => (
               <tr key={c.id}>
-                <td>{new Date(c.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                <td>
+                <td data-label="Fecha">{new Date(c.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                <td data-label="Resultado">
                   {fmtMoney(c.vinm_dop, c.moneda_resultado)}<br />
                   E1: {c.score_e1}% {c.score_e2 != null ? `/ E2: ${c.score_e2}%` : ''}<br />
                   Financia: {fmtMoney(c.pr_dop, c.moneda_resultado)} · Inicial: {fmtMoney(c.ini_dop, c.moneda_resultado)}<br />
                   Cuota: {fmtMoney(c.cuota_dop, c.moneda_resultado)} · Endeudamiento: {c.dti != null ? (c.dti * 100).toFixed(0) + '%' : '-'}
                 </td>
-                <td>
+                <td data-label="Perfil">
                   {EMP_LABELS[c.empleo || ''] || c.empleo || '-'}<br />
                   Antigüedad: {ANT_LABELS[c.antiguedad_laboral || ''] || c.antiguedad_laboral || '-'}<br />
                   {c.pais || '-'} · {c.edad != null ? `${c.edad} años` : '-'}
                 </td>
-                <td>
+                <td data-label="Crédito">
                   {c.tuvo_prestamos ? 'Con historial' : 'Sin historial previo'}<br />
                   Atraso: {ATRASO_LABELS[c.atraso_dias ?? -1] || '-'} {c.atraso_patron === 'patron' ? '(recurrente)' : c.atraso_patron === 'unico' ? '(aislado)' : ''}<br />
                   Antigüedad crédito: {c.antiguedad_credito || '-'}<br />
                   Productos: {(c.productos || []).join(', ') || '-'}
                 </td>
-                <td>
+                <td data-label="Ingresos">
                   Ingreso: {fmtMoney(c.ing_dop, c.moneda_resultado)}<br />
                   Deuda: {fmtMoney(c.deu_dop, c.moneda_resultado)}<br />
                   Adicionales: {fmtMoney(c.activos_dop, c.moneda_resultado)}
                 </td>
-                <td>
+                <td data-label="Co-deudor">
                   {c.tiene_codeudor ? (
                     <span className="adm-pill adm-pill-green">Sí — {fmtMoney(c.ingreso_codeudor_dop, c.moneda_resultado)}</span>
                   ) : (
                     <span className="adm-pill adm-pill-gray">No</span>
                   )}
                 </td>
-                <td>
+                <td data-label="">
                   <DeleteButton
                     id={c.id}
                     action={deleteCalculo}

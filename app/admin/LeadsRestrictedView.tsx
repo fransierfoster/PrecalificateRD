@@ -3,6 +3,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import { type Lead, LeadDetail } from './LeadsTable';
 import LeadComments, { type Comentario } from './LeadComments';
+import SendLeadEmail from './SendLeadEmail';
 
 function refNum(lead: Lead): string {
   if (!lead.calculo_id) return '—';
@@ -12,9 +13,9 @@ function refNum(lead: Lead): string {
 }
 
 // Vista para el acceso restringido "leads": solo lectura de los datos del
-// lead + agregar comentarios. Sin campos de seguimiento (Contactado/Asesor/
-// Resultado/Notas), sin botón de eliminar, sin reenvío de correo -- esas
-// acciones no existen en este componente a propósito.
+// lead + agregar comentarios + reenviar por correo. Sin campos de seguimiento
+// (Contactado/Asesor/Resultado/Notas) ni botón de eliminar -- esas acciones
+// no existen en este componente a propósito.
 export default function LeadsRestrictedView({ leads, comentariosByLead }: { leads: Lead[]; comentariosByLead: Record<string, Comentario[]> }) {
   const [scoreMin, setScoreMin] = useState('');
   const [scoreMax, setScoreMax] = useState('');
@@ -74,14 +75,14 @@ export default function LeadsRestrictedView({ leads, comentariosByLead }: { lead
               return (
                 <Fragment key={lead.id}>
                   <tr>
-                    <td>{new Date(lead.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                    <td>
+                    <td data-label="Fecha">{new Date(lead.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td data-label="Contacto">
                       <strong>{lead.nombre} {lead.apellido}</strong><br />
                       {lead.telefono}<br />
                       {lead.email}
                     </td>
-                    <td>{lead.doc_tipo} {lead.doc_numero}</td>
-                    <td>
+                    <td data-label="Documento">{lead.doc_tipo} {lead.doc_numero}</td>
+                    <td data-label="Referencia / Tipo">
                       <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#374151', display: 'block', marginBottom: 4 }}>
                         {refNum(lead)}
                       </span>
@@ -89,14 +90,14 @@ export default function LeadsRestrictedView({ leads, comentariosByLead }: { lead
                         {lead.tipo === 'pdf' ? '📄 PDF' : '💬 Asesoría'}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Resultado">
                       {c ? (
                         <>
                           E1: {c.score_e1}% {c.score_e2 != null ? `/ E2: ${c.score_e2}%` : ''}
                         </>
                       ) : <span className="adm-empty">sin datos</span>}
                     </td>
-                    <td>
+                    <td data-label="">
                       {c && (
                         <button type="button" className="adm-btn" onClick={() => toggleExpanded(lead.id)}>
                           {isOpen ? '▾ Ocultar' : '▸ Ver perfil'}
@@ -108,6 +109,9 @@ export default function LeadsRestrictedView({ leads, comentariosByLead }: { lead
                     <tr>
                       <td colSpan={6} style={{ padding: 0 }}>
                         <LeadDetail c={c} />
+                        <div className="adm-lead-detail">
+                          <SendLeadEmail leadId={lead.id} />
+                        </div>
                         <div className="adm-lead-detail">
                           <LeadComments leadId={lead.id} comentarios={comentariosByLead[lead.id] || []} />
                         </div>
