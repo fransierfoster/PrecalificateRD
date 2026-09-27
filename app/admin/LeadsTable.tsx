@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useMemo, useState } from 'react';
-import { updateLead, deleteLead } from './actions';
+import { deleteLead } from './actions';
 import DeleteButton from './DeleteButton';
 import { type Calculo, EMP_LABELS, ANT_LABELS, ATRASO_LABELS } from './CalculosTable';
 import LeadComments, { type Comentario } from './LeadComments';
@@ -205,7 +205,6 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
               <th>Resultado</th>
               <th>Ofertas</th>
               <th>Referido</th>
-              <th>Seguimiento</th>
               <th></th>
               <th></th>
             </tr>
@@ -251,15 +250,6 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
                         {lead.referido_asesor ? '🎯 Sí' : 'No'}
                       </span>
                     </td>
-                    <td data-label="Seguimiento">
-                      <form action={updateLead} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 160 }}>
-                        <input type="hidden" name="id" value={lead.id} />
-                        <label style={{ fontSize: 12 }}>
-                          <input type="checkbox" name="contactado" defaultChecked={!!lead.contactado} /> Contactado
-                        </label>
-                        <button type="submit" className="adm-btn adm-btn-primary">Guardar</button>
-                      </form>
-                    </td>
                     <td data-label="">
                       {c && (
                         <button type="button" className="adm-btn" onClick={() => toggleExpanded(lead.id)}>
@@ -277,7 +267,7 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
                   </tr>
                   {isOpen && c && (
                     <tr>
-                      <td colSpan={10} style={{ padding: 0 }}>
+                      <td colSpan={9} style={{ padding: 0 }}>
                         <LeadDetail c={c} />
                         <div className="adm-lead-detail">
                           <SendLeadEmail leadId={lead.id} />

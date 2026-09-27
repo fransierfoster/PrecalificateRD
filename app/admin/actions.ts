@@ -37,24 +37,6 @@ export async function updateParametro(formData: FormData): Promise<{ ok: boolean
   return { ok: true };
 }
 
-export async function updateLead(formData: FormData) {
-  const id = String(formData.get('id'));
-
-  // Asesor asignado / Resultado banco / Notas se quitaron del formulario --
-  // los comentarios de seguimiento (precalifica_lead_comentarios) los
-  // reemplazan. Ya NO se incluyen en este update para no pisar con "" el
-  // historico que algun lead pudiera tener guardado en esas columnas.
-  const supabase = await createClient();
-  await supabase
-    .from('precalifica_leads')
-    .update({
-      contactado: formData.get('contactado') === 'on',
-    })
-    .eq('id', id);
-
-  revalidatePath('/admin');
-}
-
 // Chequeo de rol adicional (defensa en profundidad) para acciones que no
 // tienen su propia policy de RLS que ya bloquee al rol "leads" -- por ejemplo
 // reenviar un correo no modifica ni borra el lead, asi que RLS por si sola no
