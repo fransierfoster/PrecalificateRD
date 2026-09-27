@@ -19,15 +19,12 @@ function refNum(lead: Lead): string {
 export default function LeadsRestrictedView({ leads, comentariosByLead }: { leads: Lead[]; comentariosByLead: Record<string, Comentario[]> }) {
   const [scoreMin, setScoreMin] = useState('');
   const [scoreMax, setScoreMax] = useState('');
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Solo un lead expandido a la vez -- al abrir uno se cierra el anterior,
+  // para que la informacion se vea mas ordenada.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   function toggleExpanded(id: string) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setExpandedId((prev) => (prev === id ? null : id));
   }
 
   const filtered = useMemo(() => {
@@ -72,7 +69,7 @@ export default function LeadsRestrictedView({ leads, comentariosByLead }: { lead
           <tbody>
             {filtered.map((lead) => {
               const c = lead.precalifica_calculos;
-              const isOpen = expanded.has(lead.id);
+              const isOpen = expandedId === lead.id;
               return (
                 <Fragment key={lead.id}>
                   <tr>
