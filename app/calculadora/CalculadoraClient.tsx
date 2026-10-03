@@ -215,7 +215,7 @@ export default function CalculadoraClient() {
         .calc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
         .calc-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
         @media (max-width:720px){.calc-grid,.calc-opts{grid-template-columns:1fr;gap:10px}}
-        .calc-card{background:#fff;border:1.5px solid #E5E2DF;border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;color:inherit;width:100%;transition:border-color .15s,box-shadow .15s}
+        .calc-card{position:relative;background:#fff;border:1.5px solid #E5E2DF;border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;color:inherit;width:100%;transition:border-color .15s,box-shadow .15s}
         .calc-card.sel{border-color:#C0161C;box-shadow:0 0 0 3px rgba(192,22,28,.10)}
         .calc-radio{width:20px;height:20px;border-radius:50%;border:2px solid #C9C5C0;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#fff}
         .calc-card.sel .calc-radio{border-color:#C0161C}
@@ -320,13 +320,14 @@ export default function CalculadoraClient() {
                     onClick={() => setPctSel(o.pct)}
                     aria-pressed={o.pct === pctSel}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 10px', marginBottom: 10 }}>
                       <span className="calc-radio" aria-hidden="true" />
                       <span style={{ fontSize: 15, fontWeight: 700 }}>Financiar {o.pct}%</span>
-                      {o.pct === 80 && (
-                        <span style={{ fontSize: 11, fontWeight: 600, background: '#FEF2F2', color: '#C0161C', padding: '2px 8px', borderRadius: 6, marginLeft: 'auto' }}>Más común</span>
-                      )}
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#6B7280' }}>· {sym} {fmt(o.financiar)}</span>
                     </div>
+                    {o.pct === 80 && (
+                      <span style={{ position: 'absolute', top: -10, right: 14, fontSize: 11, fontWeight: 700, background: '#C0161C', color: '#fff', padding: '2px 9px', borderRadius: 20 }}>Más común</span>
+                    )}
                     {o.ingresoMin == null || o.ingresoMinUsd == null ? (
                       <div style={{ fontSize: 15, fontWeight: 700, color: '#1D3A8A' }}>Lo evalúa un asesor contigo</div>
                     ) : o.ingresoMax == null || o.ingresoMaxUsd == null ? (
