@@ -11,6 +11,7 @@ export type Anuncio = {
   imagen_url: string | null;
   referencia: string | null;
   score_minimo: number | null;
+  score_maximo: number | null;
   monto_minimo: number | null;
   orden: number;
   descuento_activo: boolean;
@@ -170,6 +171,15 @@ function AnuncioSlot({ ad, idx, total }: { ad: Anuncio; idx: number; total: numb
             <label style={{ fontSize: 11, color: '#6B7280', display: 'block', marginBottom: 2 }}>Score mínimo (%)</label>
             <input name="score_minimo" type="number" min={0} max={100} defaultValue={ad.score_minimo ?? 70}
               style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 8px', fontSize: 13, boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: '#6B7280', display: 'block', marginBottom: 2 }}>Score máximo (%) <span style={{ color: '#9CA3AF' }}>(opcional)</span></label>
+            <input name="score_maximo" type="number" min={0} max={100} defaultValue={ad.score_maximo ?? ''}
+              placeholder="Sin tope"
+              style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 8px', fontSize: 13, boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ gridColumn: '1 / -1', fontSize: 11, color: '#9CA3AF', marginTop: -4 }}>
+            Déjalo vacío para anuncios de probabilidad alta (comportamiento normal). Complétalo (ej. 69) para dirigir este anuncio a un rango bajo de probabilidad — se mostrará en el popup que hoy invita a hablar con un asesor cuando el resultado es menor a 70%.
           </div>
           <div>
             <label style={{ fontSize: 11, color: '#6B7280', display: 'block', marginBottom: 2 }}>Monto mínimo (RD$)</label>

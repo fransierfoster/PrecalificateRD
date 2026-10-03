@@ -220,6 +220,7 @@ export default async function AdminPage() {
   const leadsE1 = (leads || []).map((l) => l.precalifica_calculos?.score_e1);
   const leadsE2 = (leads || []).map((l) => l.precalifica_calculos?.score_e2);
   const pdfDownloadsCount = (leads || []).filter((l) => l.tipo === 'pdf').length;
+  const calcLeadsCount = (leads || []).filter((l) => l.origen === 'calculadora').length;
 
   const groups: Record<string, Parametro[]> = {};
   (parametros || []).forEach((p) => {
@@ -334,6 +335,29 @@ export default async function AdminPage() {
             </div>
             <div style={{ width: 36, textAlign: 'right', fontSize: 12, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#374151' }}>{pdfDownloadsCount}</div>
           </div>
+        </div>
+      </div>
+
+      <div className="adm-card">
+        <h2>Calculadora (publicidad)</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[
+            { label: 'Entradas a la calculadora', count: funnelMap['calc_visita'] || 0, color: '#1D3A8A' },
+            { label: 'Pulsaron "Calcular"', count: funnelMap['calc_calcular'] || 0, color: '#1D3A8A' },
+            { label: 'Pulsaron "Continuar con mi precalificación"', count: funnelMap['calc_continuar'] || 0, color: '#C0161C' },
+            { label: 'Leads que dejaron sus datos', count: calcLeadsCount, color: '#065F46' },
+          ].map((s) => {
+            const max = Math.max(1, funnelMap['calc_visita'] || 0, funnelMap['calc_calcular'] || 0, funnelMap['calc_continuar'] || 0, calcLeadsCount);
+            return (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 240, fontSize: 13, color: '#374151', flexShrink: 0 }}>{s.label}</div>
+                <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 4, height: 18, overflow: 'hidden' }}>
+                  <div style={{ width: Math.round((s.count / max) * 100) + '%', height: '100%', background: s.color, transition: 'width .3s' }} />
+                </div>
+                <div style={{ width: 36, textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#111' }}>{s.count}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -85,8 +85,16 @@ export default function LeadsRestrictedView({ leads, comentariosByLead }: { lead
                         {refNum(lead)}
                       </span>
                       <span className={`adm-pill ${lead.tipo === 'pdf' ? 'adm-pill-red' : 'adm-pill-gray'}`}>
-                        {lead.tipo === 'pdf' ? '📄 PDF' : '💬 Asesoría'}
+                        {lead.tipo === 'pdf' ? '📄 PDF' : lead.tipo === 'propiedades' ? '🏠 Propiedades' : '💬 Asesoría'}
                       </span>
+                      {lead.origen === 'calculadora' && (
+                        <span className="adm-pill adm-pill-green" style={{ display: 'inline-block', marginTop: 4 }}>
+                          🧮 Calculadora{lead.fuente ? ` · ${lead.fuente}` : ''}
+                        </span>
+                      )}
+                      {lead.tipo === 'propiedades' && lead.notas && (
+                        <span style={{ display: 'block', marginTop: 6, fontSize: 12, color: '#374151', lineHeight: 1.45, maxWidth: 360 }}>{lead.notas}</span>
+                      )}
                     </td>
                     <td data-label="Resultado">
                       {c ? (

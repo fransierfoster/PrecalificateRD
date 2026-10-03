@@ -46,6 +46,10 @@ export async function POST(req: NextRequest) {
     rows.push(row('Email', lead.email || '-'));
     rows.push(row('Documento', `${lead.docTipo || ''} ${lead.docNum || ''}`.trim() || '-'));
     rows.push(row('Desea ofertas', body.quiereOfertas ? 'Sí' : 'No'));
+    if (body.origen === 'calculadora') {
+      const fuente = String(body.fuente || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 30);
+      rows.push(row('Origen', fuente ? `Calculadora (${fuente})` : 'Calculadora'));
+    }
 
     const e1Rows: string[] = [];
     e1Rows.push(row('Valor inmueble', fmtMoney(sd.vinmDOP, currency)));

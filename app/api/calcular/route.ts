@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { consumirSlider, evaluarCalculo, ipDe, marcarVerificado, registrarCalculo, verificarCaptcha } from '@/lib/limite-uso';
 
 export const runtime = 'nodejs';
 
@@ -506,6 +507,11 @@ export function computeFull(input: CalcInput, p: Params, tm: number, tc: number)
   let e2: ScoreResult = { sc: 0, cDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
   let mrDOP = 0, virDOP = 0, isiDOP = iniDOP;
 
+  // Si el E1 no llega a 70, el E2 busca la propiedad más cercana al precio
+  // pedido que alcance 70; si el E1 ya es >= 70, sigue buscando una mejora a 80+.
+  const objE2 = e1.sc < 70 ? 70 : 80;
+  const techoE2 = objE2 === 70 ? 70 : 85;
+
   if (!e2NoViable) {
     for (let pct = 0.95; pct >= 0.30; pct = Math.round((pct - 0.05) * 100) / 100) {
       let vir2 = Math.round(vinmDOP * pct / 10000) * 10000;
@@ -515,11 +521,11 @@ export function computeFull(input: CalcInput, p: Params, tm: number, tc: number)
       if (mr2 <= 0) break;
       const e2t = scoreFn(mr2, iniDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc, atrehab);
       if (e2t.sc > e2.sc) { mrDOP = mr2; virDOP = vir2; isiDOP = iniDOP; e2 = e2t; }
-      if (e2.sc >= 80) break;
+      if (e2.sc >= objE2) break;
     }
   }
 
-  if (e2.sc < 80) {
+  if (e2.sc < objE2) {
     const cmaxHip = Math.max(0, ingEffTotal * 0.33 - deuExist);
     mrDOP = cmaxHip > 0 ? Math.round((cmaxHip * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000 : 0;
     if (mrDOP >= prDOP) mrDOP = Math.max(0, prDOP - 100000);
@@ -537,7 +543,7 @@ export function computeFull(input: CalcInput, p: Params, tm: number, tc: number)
 
     if (!e2NoViable) {
       const ratios = [0.30, 0.28, 0.25];
-      for (let ri = 0; ri < ratios.length && e2.sc < 85; ri++) {
+      for (let ri = 0; ri < ratios.length && e2.sc < techoE2; ri++) {
         const cap2 = ingEffTotal * ratios[ri] - deuExist;
         if (cap2 > 0) {
           let mr2 = Math.round((Math.max(0, cap2) * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000;
@@ -577,8 +583,22 @@ export async function POST(req: NextRequest) {
       ingDOP, deuDOP, ingCDDOP, deuCDDOP,
       expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD,
       vinmDOP, iniDOP, mr,
-      sliderOnly, bancoId,
+      sliderOnly, bancoId, captchaToken,
     } = body;
+
+    const ip = ipDe(req);
+    if (sliderOnly) {
+      if (!consumirSlider(ip)) return NextResponse.json({ error: 'limite' }, { status: 429 });
+    } else {
+      const estadoUso = evaluarCalculo(ip);
+      if (estadoUso === 'limite') return NextResponse.json({ error: 'limite' }, { status: 429 });
+      if (estadoUso === 'captcha') {
+        if (!(await verificarCaptcha(captchaToken, ip))) {
+          return NextResponse.json({ error: 'captcha' }, { status: 403 });
+        }
+        marcarVerificado(ip);
+      }
+    }
 
     const flatMap = await loadFlatParams();
     const p = flatMap ? buildParamsFromMap(flatMap) : defaultParams();
@@ -649,6 +669,8 @@ export async function POST(req: NextRequest) {
         });
       }
     }
+
+    registrarCalculo(ip);
 
     return NextResponse.json({
       ...result,

@@ -127,6 +127,7 @@ export async function saveAnuncio(formData: FormData): Promise<{ ok: boolean; er
     descripcion: String(formData.get('descripcion') || ''),
     referencia: String(formData.get('referencia') || ''),
     score_minimo: Number(formData.get('score_minimo') || 70),
+    score_maximo: formData.get('score_maximo') ? Number(formData.get('score_maximo')) : null,
     monto_minimo: Number(String(formData.get('monto_minimo') || '0').replace(/,/g, '')),
     descuento_activo: formData.get('descuento_activo') === 'true',
     descuento_monto: Number(String(formData.get('descuento_monto') || '0').replace(/,/g, '')) || null,
@@ -534,6 +535,10 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
   rows.push(row('Email', lead.email || '-'));
   rows.push(row('Documento', `${lead.doc_tipo || ''} ${lead.doc_numero || ''}`.trim() || '-'));
   rows.push(row('Desea ofertas', lead.quiere_ofertas ? 'Sí' : 'No'));
+  if (lead.origen === 'calculadora') {
+    const fuente = String(lead.fuente || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 30);
+    rows.push(row('Origen', fuente ? `Calculadora (${fuente})` : 'Calculadora'));
+  }
 
   const e1Rows: string[] = [];
   e1Rows.push(row('Valor inmueble', fmtMoneyEmail(c.vinm_dop, mr)));

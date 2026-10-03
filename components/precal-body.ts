@@ -127,7 +127,7 @@ export const PRECAL_BODY_HTML = `<div class="thbar"><span class="thlbl" id="thlb
       <div id="ad-popup-ref" style="position:absolute;top:12px;left:12px;background:#C0161C;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;"></div>
       <div id="ad-popup-desc-badge" style="position:absolute;bottom:52px;left:12px;background:#F59E0B;color:#78350F;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;display:none;"></div>
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 14px;">
-        <div style="color:rgba(255,255,255,.75);font-size:11px;margin-bottom:3px;">✨ Encontramos una mejor opción para tu perfil</div>
+        <div id="ad-popup-eyebrow" style="color:rgba(255,255,255,.75);font-size:11px;margin-bottom:3px;">✨ Encontramos una mejor opción para tu perfil</div>
         <div id="ad-popup-titulo" style="color:#fff;font-size:15px;font-weight:700;line-height:1.3;"></div>
       </div>
     </div>
@@ -138,8 +138,8 @@ export const PRECAL_BODY_HTML = `<div class="thbar"><span class="thlbl" id="thlb
           <span style="color:rgba(255,255,255,.7);font-size:10px;">%</span>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:#065F46;">Probabilidad de aprobación</div>
-          <div style="font-size:11px;color:#6B7280;margin-top:1px;">Escenario 2 — mejor opción según tu perfil</div>
+          <div id="ad-popup-prob-label" style="font-size:12px;font-weight:600;color:#065F46;">Probabilidad de aprobación</div>
+          <div id="ad-popup-prob-sub" style="font-size:11px;color:#6B7280;margin-top:1px;">Escenario 2 — mejor opción según tu perfil</div>
         </div>
       </div>
       <div id="ad-popup-descuento" style="display:none;background:#FEF3C7;border:1px solid #FCD34D;border-radius:10px;padding:10px 12px;margin-bottom:12px;">

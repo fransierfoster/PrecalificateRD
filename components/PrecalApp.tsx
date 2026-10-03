@@ -7,6 +7,7 @@ declare global {
   interface Window {
     __SUPA_URL__?: string;
     __SUPA_KEY__?: string;
+    __TURNSTILE_KEY__?: string;
     initPrecal?: () => void;
   }
 }
@@ -15,6 +16,7 @@ export default function PrecalApp() {
   useEffect(() => {
     window.__SUPA_URL__ = process.env.NEXT_PUBLIC_SUPABASE_URL;
     window.__SUPA_KEY__ = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    window.__TURNSTILE_KEY__ = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
     const existing = document.getElementById('precal-script');
     if (existing) {

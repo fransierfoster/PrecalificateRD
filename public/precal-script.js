@@ -703,7 +703,9 @@ function render() {
     }).join('');
   }
 
-  var showE2 = e1.sc < 80 && SD.e2 && SD.e2.sc >= 80;
+  // El Escenario 2 solo se ofrece si la propiedad pedida no llega a 70%; si ya
+  // llega, se refuerza ese resultado en vez de mostrar otra propiedad.
+  var showE2 = e1.sc < 70 && SD.e2 && SD.e2.sc >= 70;
   document.getElementById('e2wrap').style.display = showE2 ? 'block' : 'none';
 
   var bo1 = document.getElementById('btn-ofertas-e1');
@@ -724,7 +726,7 @@ function render() {
   document.getElementById('ofertas-row').style.display = 'none';
 
   if (showE2) {
-    var e2Insuficiente = SD.mrDOP <= 0 || e2.sc < 80;
+    var e2Insuficiente = SD.mrDOP <= 0 || e2.sc < 70;
     var e2box = document.getElementById('e2box');
     var e2lbl = document.getElementById('e2lbl');
     var bo2 = document.getElementById('btn-ofertas-e2');
@@ -894,7 +896,7 @@ function render() {
     } else {
       _scLead = e1.sc;
       _isE2Lead = false;
-      if (showE2 && SD.e2 && SD.e2.sc >= 80 && e1.sc < 70) { _scLead = SD.e2.sc; _isE2Lead = true; }
+      if (showE2) { _scLead = SD.e2.sc; _isE2Lead = true; }
       // El banco a mostrar en el popup depende de si el resultado viene del
       // Escenario 1 (banco elegido arriba) o del Escenario 2 (su propio mejor
       // banco, que puede ser otro). Si multibanco no esta activo, bancoPorId
@@ -913,7 +915,18 @@ function render() {
         // POPUP_SOLO_E2 (opcion del admin): el popup de lead solo se muestra
         // si el resultado que lo dispara viene del Escenario 2 -- no afecta
         // al popup de anuncios, que tiene su propia logica de score_minimo.
-        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70 && (!POPUP_SOLO_E2 || _isE2Lead)) { showLeadPopup(_scLead, _isE2Lead, _bancoPopup); }
+        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70 && (!POPUP_SOLO_E2 || _isE2Lead) && ANUNCIOS_ACTIVOS.length === 0) { showLeadPopup(_scLead, _isE2Lead, _bancoPopup); }
+      }, 2500);
+    } else if (e1.sc < 70) {
+      // Ninguno de los dos escenarios llego a 70% -- el cliente puede asumir
+      // que "no califica" y abandonar. Mostramos un popup que reencuadra el
+      // resultado e invita a hablar con un asesor de todas formas, o un
+      // anuncio si el admin configuro uno especifico para este rango bajo
+      // (score_maximo en precalifica_anuncios).
+      _popupShownForCalc = true;
+      _popupTimer = setTimeout(function () {
+        var adBajo = getAdParaScore(e1.sc, SD.vinmDOP || 0);
+        if (adBajo) { showAdPopup(adBajo, e1.sc); } else { showLeadPopup(e1.sc, false, null); }
       }, 2500);
     }
   }
@@ -940,7 +953,8 @@ function cargarAnuncios() {
 function getAdParaScore(sc, monto) {
   for (var i = 0; i < ANUNCIOS_ACTIVOS.length; i++) {
     var ad = ANUNCIOS_ACTIVOS[i];
-    if (sc >= (ad.score_minimo || 0) && monto >= (ad.monto_minimo || 0)) return ad;
+    var dentroDeTope = (ad.score_maximo == null || sc <= ad.score_maximo);
+    if (sc >= (ad.score_minimo || 0) && dentroDeTope && monto >= (ad.monto_minimo || 0)) return ad;
   }
   return null;
 }
@@ -949,6 +963,17 @@ function showAdPopup(ad, sc) {
   AD_POPUP_DATA = ad;
   var popup = document.getElementById('ad-popup');
   if (!popup) return;
+
+  // Anuncios de rango bajo (score_maximo configurado) se disparan cuando
+  // NINGUN escenario llego a 70% -- el score mostrado es el del Escenario 1
+  // (la propiedad que el cliente pidio), no una alternativa mejor. El texto
+  // fijo de "Escenario 2 / mejor opcion" solo aplica a los anuncios de rango
+  // alto de siempre.
+  var esRangoBajo = ad.score_maximo != null;
+  var eyebrowEl = document.getElementById('ad-popup-eyebrow');
+  if (eyebrowEl) eyebrowEl.textContent = esRangoBajo ? '💡 Tenemos algo que puede ayudarte' : '✨ Encontramos una mejor opción para tu perfil';
+  var probSubEl = document.getElementById('ad-popup-prob-sub');
+  if (probSubEl) probSubEl.textContent = esRangoBajo ? 'Con tu perfil actual' : 'Escenario 2 — mejor opción según tu perfil';
 
   var img = document.getElementById('ad-popup-img');
   if (img) { img.src = ad.imagen_url || ''; img.style.display = ad.imagen_url ? '' : 'none'; }
@@ -996,7 +1021,6 @@ function irLeadAnuncio() {
 
 function showLeadPopup(sc, isE2, banco) {
   if (!POPUP_ACTIVO) return;
-  if (ANUNCIOS_ACTIVOS.length > 0) return;
   var color, badge, title, sub, body;
   if (sc >= 90) {
     color = '#059669';
@@ -1010,12 +1034,18 @@ function showLeadPopup(sc, isE2, banco) {
     title = isE2 ? 'Encontramos una opción con alta probabilidad de aprobación' : 'Tu perfil tiene alta probabilidad de aprobación';
     sub = isE2 ? 'Con una propiedad ajustada a tu perfil' : 'Las posibilidades son muy altas';
     body = isE2 ? 'Hay una propiedad donde tu perfil clasifica con alta probabilidad. Nuestros asesores te acompañan desde el primer paso.' : 'Muy buen perfil. Estás en una posición sólida para iniciar el proceso. Nuestros asesores te acompañarán desde el inicio hasta el cierre.';
-  } else {
+  } else if (sc >= 70) {
     color = '#0E7490';
     badge = 'Probabilidad Moderada';
-    title = 'Tu perfil puede clasificar para financiamiento';
-    sub = 'Varias entidades podrían aprobarte hoy';
-    body = 'Con este perfil ya puedes explorar opciones reales. Un asesor puede ayudarte a presentarte ante la entidad correcta y aumentar tus probabilidades.';
+    title = isE2 ? 'Encontramos una propiedad donde tu perfil puede clasificar' : 'Tu perfil puede clasificar para financiamiento';
+    sub = isE2 ? 'Con una propiedad ajustada a tu perfil' : 'Varias entidades podrían aprobarte hoy';
+    body = isE2 ? 'Hay una propiedad donde tu perfil puede clasificar para financiamiento. Un asesor te muestra los detalles y te ayuda a presentarte ante la entidad correcta.' : 'Con este perfil ya puedes explorar opciones reales. Un asesor puede ayudarte a presentarte ante la entidad correcta y aumentar tus probabilidades.';
+  } else {
+    color = '#2563EB';
+    badge = 'Hablemos de tu situación';
+    title = 'Este resultado no es un no';
+    sub = 'Es el punto de partida para evaluar tu caso';
+    body = 'Muchos clientes mejoran su perfil o encuentran alternativas con la ayuda de un asesor, incluso partiendo de este resultado. Conversemos sobre tu situación real.';
   }
 
   var p = document.getElementById('lead-popup');
@@ -1193,6 +1223,7 @@ function updSl() {
         vinmDOP: vinmDOP, iniDOP: niDOP, mr: MR, sliderOnly: true, bancoId: SD.bancoSelId || null
       })
     }).then(function (r) { return r.json(); }).then(function (res) {
+      if (res.error) { document.getElementById('slpr').textContent = '—'; return; }
       document.getElementById('slcu').textContent = fmt(res.cDOP || 0);
       var col = res.sc >= 80 ? '#10B981' : res.sc >= 70 ? '#F0A500' : '#EF4444';
       var pr = document.getElementById('slpr');
@@ -1200,6 +1231,20 @@ function updSl() {
       pr.style.color = col;
     }).catch(function () {});
   }, 300);
+}
+
+function leerOrigenCalc(consumir) {
+  var r = { origen: null, fuente: null, interes: null };
+  try {
+    var calc = JSON.parse(localStorage.getItem('precalRD_calc') || 'null');
+    if (calc && calc.ts && Date.now() - calc.ts < 86400000) {
+      r.origen = 'calculadora';
+      r.fuente = calc.fuente || null;
+      r.interes = calc.interes || null;
+    }
+    if (consumir) localStorage.removeItem('precalRD_calc');
+  } catch (e) {}
+  return r;
 }
 
 function enviar() {
@@ -1237,7 +1282,10 @@ function enviar() {
     docNum: dn
   };
 
-  sendWebhook('contacto', { quiereOfertas: QUIERE_OFERTAS, tipo: PDF_MODE ? 'pdf' : 'asesoria' }, lead);
+  var calc = leerOrigenCalc(true);
+  if (calc.interes === 'ofertas') QUIERE_OFERTAS = true;
+
+  sendWebhook('contacto', { quiereOfertas: QUIERE_OFERTAS, tipo: PDF_MODE ? 'pdf' : 'asesoria', origen: calc.origen, fuente: calc.fuente }, lead);
 
   document.getElementById('sr').classList.remove('act');
   document.getElementById('success').classList.add('act');
@@ -1341,8 +1389,8 @@ function compartir() {
   txt += '📅 Cuota mensual estimada: ' + fmt(e1.cDOP) + '\n';
   txt += '📊 Probabilidad de aprobación: ' + e1.sc + '% (' + nivelTxt(e1.sc) + ')\n';
 
-  var showE2 = e1.sc < 80;
-  var e2Insuficiente = !SD.e2 || SD.mrDOP <= 0 || SD.e2.sc < 80;
+  var showE2 = e1.sc < 70;
+  var e2Insuficiente = !SD.e2 || SD.mrDOP <= 0 || SD.e2.sc < 70;
   if (showE2 && !e2Insuficiente) {
     txt += '\n✅ Escenario 2 — Tu mejor opción con el inicial que tienes disponible'
       + (SD.bancoE2Nombre ? ' (con ' + SD.bancoE2Nombre + ')' : '') + '\n';
@@ -1510,19 +1558,31 @@ function calc() {
   var vinmDOP = pn('vinm') * mpR;
   var iniDOP = pn('ini') * mpR;
 
+  var payload = {
+    edad: edad, pais: pais, emp: emp, ant: ant, tuvoPres: tuvoPres,
+    expc: expc, antCred: antCred, prods: prods,
+    atraw: atraw, atpat: atpat, atrehab: atrehab, tieneCD: tieneCD, activos: activos,
+    ingDOP: ingDOP, deuDOP: deuDOP, ingCDDOP: ingCDDOP, deuCDDOP: deuCDDOP,
+    expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
+    atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
+    vinmDOP: vinmDOP, iniDOP: iniDOP, mr: MR
+  };
+
+  function ejecutarCalculo(captchaToken) {
   fetch('/api/calcular', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      edad: edad, pais: pais, emp: emp, ant: ant, tuvoPres: tuvoPres,
-      expc: expc, antCred: antCred, prods: prods,
-      atraw: atraw, atpat: atpat, atrehab: atrehab, tieneCD: tieneCD, activos: activos,
-      ingDOP: ingDOP, deuDOP: deuDOP, ingCDDOP: ingCDDOP, deuCDDOP: deuCDDOP,
-      expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
-      atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
-      vinmDOP: vinmDOP, iniDOP: iniDOP, mr: MR
-    })
+    body: JSON.stringify(captchaToken ? Object.assign({ captchaToken: captchaToken }, payload) : payload)
   }).then(function (r) { return r.json(); }).then(function (res) {
+    if (res.error === 'captcha') {
+      pedirCaptcha(function (tok) { ejecutarCalculo(tok); }, function () { if (bcalc) bcalc.disabled = false; });
+      return;
+    }
+    if (res.error === 'limite') {
+      alert('Alcanzaste el límite de cálculos por ahora. Intenta de nuevo más tarde o solicita asesoría con un asesor.');
+      if (bcalc) bcalc.disabled = false;
+      return;
+    }
     if (res.error) { if (bcalc) bcalc.disabled = false; return; }
 
     if (res.tc) TC = res.tc;
@@ -1580,6 +1640,60 @@ function calc() {
   }).catch(function (err) {
     console.error('Error al calcular:', err);
     if (bcalc) bcalc.disabled = false;
+  });
+  }
+  ejecutarCalculo(null);
+}
+
+// -- VERIFICACION ANTI-ROBOT (Cloudflare Turnstile) --
+var _tsScriptPromise = null;
+function cargarTurnstile() {
+  if (window.turnstile) return Promise.resolve();
+  if (!_tsScriptPromise) {
+    _tsScriptPromise = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { _tsScriptPromise = null; reject(new Error('turnstile')); };
+      document.head.appendChild(s);
+    });
+  }
+  return _tsScriptPromise;
+}
+
+function pedirCaptcha(onOk, onCancel) {
+  var key = window.__TURNSTILE_KEY__;
+  var overlay = document.createElement('div');
+  overlay.id = 'captcha-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML =
+    '<div style="background:#fff;color:#0D0D0D;border-radius:16px;padding:24px 20px;max-width:380px;width:100%;text-align:center;font-family:Inter,system-ui,sans-serif;">' +
+    '<div style="font-size:17px;font-weight:700;margin-bottom:6px;">Confirma que no eres un robot</div>' +
+    '<div style="font-size:13px;color:#6B7280;line-height:1.5;margin-bottom:16px;">Ya hiciste varios cálculos seguidos. Esta verificación rápida nos ayuda a proteger el servicio.</div>' +
+    '<div id="captcha-box" style="min-height:65px;display:flex;justify-content:center;"></div>' +
+    '<div id="captcha-msg" style="font-size:12px;color:#991B1B;margin-top:8px;display:none;"></div>' +
+    '<button type="button" id="captcha-cancel" style="margin-top:14px;background:none;border:none;color:#6B7280;font-size:13px;cursor:pointer;text-decoration:underline;">Cancelar</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  function cerrar() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+  function error(txt) {
+    var m = document.getElementById('captcha-msg');
+    if (m) { m.textContent = txt; m.style.display = 'block'; }
+  }
+  document.getElementById('captcha-cancel').onclick = function () { cerrar(); onCancel(); };
+
+  if (!key) { error('La verificación no está disponible en este momento. Intenta más tarde.'); return; }
+
+  cargarTurnstile().then(function () {
+    window.turnstile.render('#captcha-box', {
+      sitekey: key,
+      callback: function (token) { cerrar(); onOk(token); },
+      'error-callback': function () { error('No pudimos completar la verificación. Intenta de nuevo.'); }
+    });
+  }).catch(function () {
+    error('No pudimos cargar la verificación. Revisa tu conexión e intenta de nuevo.');
   });
 }
 
@@ -1652,6 +1766,7 @@ function sendWebhook(tipo, data, lead) {
         quiere_ofertas: !!data.quiereOfertas,
         tipo: data.tipo || 'asesoria'
       };
+      if (data.origen) { leadBody.origen = data.origen; leadBody.fuente = data.fuente || null; }
 
       fetch(SUPA_URL + '/rest/v1/precalifica_leads', {
         method: 'POST',
@@ -1664,7 +1779,7 @@ function sendWebhook(tipo, data, lead) {
       fetch('/api/notify-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead: lead, quiereOfertas: !!data.quiereOfertas, sd: SD, anuncio: AD_POPUP_DATA ? { titulo: AD_POPUP_DATA.titulo, referencia: AD_POPUP_DATA.referencia, descuento_monto: AD_POPUP_DATA.descuento_monto, descuento_moneda: AD_POPUP_DATA.descuento_moneda, descuento_codigo: AD_POPUP_DATA.descuento_codigo } : null })
+        body: JSON.stringify({ lead: lead, quiereOfertas: !!data.quiereOfertas, origen: data.origen || null, fuente: data.fuente || null, sd: SD, anuncio: AD_POPUP_DATA ? { titulo: AD_POPUP_DATA.titulo, referencia: AD_POPUP_DATA.referencia, descuento_monto: AD_POPUP_DATA.descuento_monto, descuento_moneda: AD_POPUP_DATA.descuento_moneda, descuento_codigo: AD_POPUP_DATA.descuento_codigo } : null })
       }).catch(function (err) {
         console.log('Notify lead error:', err);
       });
@@ -1823,7 +1938,8 @@ function submitPdfModal() {
   if (!ok) return;
 
   var lead = { nombre: nom, apellido: ape, tel: tel, email: email, docTipo: docTipo, docNum: docNum };
-  sendWebhook('contacto', { quiereOfertas: false, tipo: 'pdf' }, lead);
+  var calcPdf = leerOrigenCalc(false);
+  sendWebhook('contacto', { quiereOfertas: false, tipo: 'pdf', origen: calcPdf.origen, fuente: calcPdf.fuente }, lead);
   actualizarContadorSolicitudes();
 
   document.getElementById('pdfModalForm').style.display = 'none';
@@ -2035,7 +2151,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
     // cuando el Escenario 1 no calificó bien (menor a 80%), se muestra igual
     // la probabilidad real del Escenario 2 -- aunque tampoco llegue a 80% --
     // en vez de ocultarlo por completo.
-    var showE2pdf = !!(SD.e2 && SD.mrDOP > 0 && e1Sc < 80);
+    var showE2pdf = !!(SD.e2 && SD.mrDOP > 0 && e1Sc < 70);
     var e2Sc = SD.e2 ? SD.e2.sc : 0;
     var e2Col = e2Sc >= 80 ? GRN : e2Sc >= 70 ? [180, 100, 0] : RED;
     var e2Lbl = e2Sc >= 80 ? 'Alta Probabilidad' : e2Sc >= 70 ? 'Probabilidad Moderada' : 'Probabilidad Baja';

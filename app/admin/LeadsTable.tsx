@@ -24,6 +24,8 @@ export type Lead = {
   notas: string | null;
   calculo_id: string | null;
   tipo: string | null;
+  origen?: string | null;
+  fuente?: string | null;
   precalifica_calculos: Calculo | null;
 };
 
@@ -93,6 +95,7 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
   const [scoreMax, setScoreMax] = useState('');
   const [contactado, setContactado] = useState('todos');
   const [moneda, setMoneda] = useState('todas');
+  const [origen, setOrigen] = useState('todos');
   // Solo un lead expandido a la vez -- al abrir uno se cierra el anterior,
   // para que la informacion se vea mas ordenada.
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -109,12 +112,14 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
       if (contactado === 'si' && !lead.contactado) return false;
       if (contactado === 'no' && lead.contactado) return false;
       if (moneda !== 'todas' && lead.precalifica_calculos?.moneda_resultado !== moneda) return false;
+      if (origen === 'calculadora' && lead.origen !== 'calculadora') return false;
+      if (origen === 'directo' && lead.origen === 'calculadora') return false;
       return true;
     });
-  }, [leads, scoreMin, scoreMax, contactado, moneda]);
+  }, [leads, scoreMin, scoreMax, contactado, moneda, origen]);
 
   function exportCSV() {
-    const headers = ['Fecha', 'Nombre', 'Apellido', 'Telefono', 'Email', 'Documento', 'Referencia', 'Tipo', 'Moneda', 'Monto', 'Score E1', 'Score E2', 'Capacidad de endeudamiento', 'Quiere ofertas', 'Contactado', 'Referido a asesor', 'Asesor asignado', 'Resultado banco', 'Notas'];
+    const headers = ['Fecha', 'Nombre', 'Apellido', 'Telefono', 'Email', 'Documento', 'Referencia', 'Tipo', 'Moneda', 'Monto', 'Score E1', 'Score E2', 'Capacidad de endeudamiento', 'Quiere ofertas', 'Origen', 'Fuente', 'Contactado', 'Referido a asesor', 'Asesor asignado', 'Resultado banco', 'Notas'];
     const rows = filtered.map((lead) => {
       const c = lead.precalifica_calculos;
       return [
@@ -132,6 +137,8 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
         c?.score_e2 != null ? String(c.score_e2) : '',
         c?.dti != null ? (c.dti * 100).toFixed(0) : '',
         lead.quiere_ofertas ? 'Si' : 'No',
+        lead.origen || '',
+        lead.fuente || '',
         lead.contactado ? 'Si' : 'No',
         lead.referido_asesor ? 'Si' : 'No',
         lead.asesor_asignado || '',
@@ -186,6 +193,14 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
             <option value="USD">USD</option>
           </select>
         </label>
+        <label className="adm-filter">
+          Origen
+          <select className="adm-input" value={origen} onChange={(e) => setOrigen(e.target.value)}>
+            <option value="todos">Todos</option>
+            <option value="calculadora">Calculadora</option>
+            <option value="directo">Directo</option>
+          </select>
+        </label>
         <button type="button" className="adm-btn adm-btn-primary adm-export-btn" onClick={exportCSV}>
           Exportar a Excel ({filtered.length})
         </button>
@@ -225,8 +240,16 @@ export default function LeadsTable({ leads, comentariosByLead }: { leads: Lead[]
                         {refNum(lead)}
                       </span>
                       <span className={`adm-pill ${lead.tipo === 'pdf' ? 'adm-pill-red' : 'adm-pill-gray'}`}>
-                        {lead.tipo === 'pdf' ? '📄 PDF' : '💬 Asesoría'}
+                        {lead.tipo === 'pdf' ? '📄 PDF' : lead.tipo === 'propiedades' ? '🏠 Propiedades' : '💬 Asesoría'}
                       </span>
+                      {lead.origen === 'calculadora' && (
+                        <span className="adm-pill adm-pill-green" style={{ display: 'inline-block', marginTop: 4 }}>
+                          🧮 Calculadora{lead.fuente ? ` · ${lead.fuente}` : ''}
+                        </span>
+                      )}
+                      {lead.tipo === 'propiedades' && lead.notas && (
+                        <span style={{ display: 'block', marginTop: 6, fontSize: 12, color: '#374151', lineHeight: 1.45, maxWidth: 360 }}>{lead.notas}</span>
+                      )}
                     </td>
                     <td data-label="Resultado">
                       {c ? (
