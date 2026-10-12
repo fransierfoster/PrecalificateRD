@@ -53,7 +53,7 @@ function track(evento: string) {
 }
 
 function irAlFormulario() {
-  window.location.href = esTest() ? '/?test=1' : '/';
+  window.location.href = esTest() ? '/?test=1&desde=calculadora' : '/?desde=calculadora';
 }
 
 export default function CalculadoraClient() {

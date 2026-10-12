@@ -2420,6 +2420,38 @@ function initPrecal() {
   }).catch(function() {});
 
   setTimeout(loadForm, 300);
+
+  // Llegada desde la calculadora inversa: ir directo al Paso 1 del formulario.
+  var desdeCalc = false;
+  try { desdeCalc = new URLSearchParams(window.location.search).get('desde') === 'calculadora'; } catch (e) {}
+  if (desdeCalc) {
+    var tocoPantalla = false;
+    ['touchstart', 'wheel', 'keydown'].forEach(function (ev) {
+      window.addEventListener(ev, function () { tocoPantalla = true; }, { once: true, passive: true });
+    });
+    setTimeout(function () {
+      var sp = document.querySelector('#restore-banner span');
+      if (sp) sp.textContent = '🧮 Cargamos desde la calculadora el valor de la vivienda y tu inicial.';
+      showS(1);
+      ssc();
+      try {
+        var q = new URLSearchParams(window.location.search);
+        q.delete('desde');
+        history.replaceState(null, '', window.location.pathname + (q.toString() ? '?' + q.toString() : ''));
+      } catch (e) {}
+    }, 700);
+    // En el celular el diseño puede moverse al terminar de cargar las imágenes: realinear si el cliente aún no ha tocado la pantalla.
+    [1800, 3200].forEach(function (ms) {
+      setTimeout(function () {
+        var fa = document.getElementById('fa');
+        if (tocoPantalla || !fa) return;
+        if (Math.abs(window.pageYOffset - (fa.offsetTop - 86)) > 40) {
+          window.scrollTo({ top: fa.offsetTop - 86, behavior: 'auto' });
+        }
+      }, ms);
+    });
+  }
+
   fetchContadorReal();
   fetchSolicitudesReal();
   cargarAnuncios();
