@@ -61,7 +61,7 @@ export default function CalculadoraClient() {
   const [valorTxt, setValorTxt] = useState('');
   const [estado, setEstado] = useState<Estado>({ s: 'idle' });
   const [pctSel, setPctSel] = useState(80);
-  const [interes, setInteres] = useState<Interes>('asesoria');
+  const [interes, setInteres] = useState<Interes>('ofertas');
   const [paso, setPaso] = useState<'resultados' | 'contacto' | 'enviado'>('resultados');
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -363,7 +363,7 @@ export default function CalculadoraClient() {
                 <span className="calc-radio" aria-hidden="true" style={{ marginTop: 2 }} />
                 <span>
                   <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>Asesoría y cálculo de intereses</span>
-                  <span style={{ display: 'block', fontSize: 13, color: '#6B7280', marginTop: 2, lineHeight: 1.45 }}>Un asesor revisa tu caso con cifras reales de los bancos.</span>
+                  <span style={{ display: 'block', fontSize: 13, color: '#6B7280', marginTop: 2, lineHeight: 1.45 }}>Cuento con este ingreso: completo mi precalificación y un asesor revisa mi caso.</span>
                 </span>
               </button>
               <button
@@ -381,7 +381,7 @@ export default function CalculadoraClient() {
               </button>
             </div>
             <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55, margin: '16px 0 0' }}>
-              Rango orientativo: va desde un perfil crediticio sólido hasta uno exigente. No es una aprobación ni una oferta de una entidad financiera. La precalificación es gratis y no afecta tu historial crediticio.
+              Rango orientativo: va desde un perfil crediticio sólido hasta uno exigente. No es una aprobación ni una oferta de una entidad financiera. El servicio es gratis y sin compromiso. La precalificación no afecta tu historial crediticio.
             </p>
           </div>
         )}
@@ -498,11 +498,11 @@ export default function CalculadoraClient() {
               <span className="calc-bar-sub"><br />
                 {interes === 'ofertas'
                   ? 'Recibir opciones de propiedades es gratis y sin compromiso.'
-                  : 'Tu precalificación es gratis y no afecta tu historial crediticio.'}
+                  : 'Completarás tu precalificación gratis, sin afectar tu historial crediticio.'}
               </span>
             </div>
             <button type="button" className="calc-bar-btn" onClick={continuar}>
-              {interes === 'ofertas' ? 'Recibir opciones de propiedades gratis' : 'Continuar con mi precalificación gratis'}
+              {interes === 'ofertas' ? 'Recibir opciones de propiedades gratis' : 'Tengo este ingreso y solicito asesoría'}
             </button>
           </div>
         </div>
