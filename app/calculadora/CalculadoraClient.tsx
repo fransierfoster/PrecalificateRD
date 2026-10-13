@@ -502,7 +502,7 @@ export default function CalculadoraClient() {
               </span>
             </div>
             <button type="button" className="calc-bar-btn" onClick={continuar}>
-              {interes === 'ofertas' ? 'Recibir opciones de propiedades gratis' : 'Tengo este ingreso y solicito asesoría'}
+              {interes === 'ofertas' ? 'Recibir opciones de propiedades gratis' : 'Tengo este ingreso y quiero asesoría'}
             </button>
           </div>
         </div>
