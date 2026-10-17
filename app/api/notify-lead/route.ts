@@ -16,6 +16,12 @@ const ATRASO_LABELS: Record<number, string> = {
   0: 'Sin atrasos', 30: 'Hasta 30 días', 45: '31-60 días', 90: 'Más de 60 días',
 };
 
+const esc = (v: unknown): string =>
+  String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+// Para el asunto del correo: texto plano sin saltos de línea ni exceso de largo.
+const asunto = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ').slice(0, 60);
+
 function fmtMoney(n: number | null | undefined, currency: string) {
   if (n == null) return '-';
   const symbol = currency === 'USD' ? 'US$' : 'RD$';
@@ -39,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const rows: string[] = [];
     const row = (label: string, value: string) =>
-      `<tr><td style="padding:4px 10px;color:#666;font-size:13px;">${label}</td><td style="padding:4px 10px;font-size:13px;"><b>${value}</b></td></tr>`;
+      `<tr><td style="padding:4px 10px;color:#666;font-size:13px;">${label}</td><td style="padding:4px 10px;font-size:13px;"><b>${esc(value)}</b></td></tr>`;
 
     rows.push(row('Nombre', `${lead.nombre || ''} ${lead.apellido || ''}`.trim() || '-'));
     rows.push(row('WhatsApp', lead.tel || '-'));
@@ -86,17 +92,17 @@ export async function POST(req: NextRequest) {
     const whyHtml = Array.isArray(sd.why) && sd.why.length
       ? sd.why.map((w: { t: string; x: string; s: string }) =>
           `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:${w.t === 'ok' ? '#F0FDF4' : w.t === 'w' ? '#FFFBEB' : '#FEF2F2'};">
-            <div style="font-size:13px;font-weight:bold;color:${WHY_COLOR[w.t] || '#333'};">${WHY_ICON[w.t] || '•'} ${w.x}</div>
-            <div style="font-size:12px;color:#555;margin-top:3px;">${w.s}</div>
+            <div style="font-size:13px;font-weight:bold;color:${WHY_COLOR[w.t] || '#333'};">${WHY_ICON[w.t] || '•'} ${esc(w.x)}</div>
+            <div style="font-size:12px;color:#555;margin-top:3px;">${esc(w.s)}</div>
           </div>`).join('')
       : '';
 
     const simsHtml = Array.isArray(sd.sims) && sd.sims.filter((s: { d: number }) => s.d > 0).length
       ? sd.sims.filter((s: { d: number }) => s.d > 0).map((s: { l: string; d: number; b: number }) =>
           `<div style="margin-bottom:6px;padding:7px 12px;border-radius:6px;background:#EFF6FF;font-size:12px;">
-            <span style="font-weight:bold;color:#1D4ED8;">+${s.d}%</span>
-            <span style="color:#333;margin-left:6px;">${s.l}</span>
-            <span style="color:#6B7280;margin-left:6px;">→ llegaría a ${s.b}%</span>
+            <span style="font-weight:bold;color:#1D4ED8;">+${esc(Number(s.d))}%</span>
+            <span style="color:#333;margin-left:6px;">${esc(s.l)}</span>
+            <span style="color:#6B7280;margin-left:6px;">→ llegaría a ${esc(Number(s.b))}%</span>
           </div>`).join('')
       : '';
 
@@ -118,8 +124,8 @@ export async function POST(req: NextRequest) {
           ${section('📊 Historial y experiencia crediticia', histRows)}
           ${anuncio ? `<div style="margin:16px 0;padding:10px 14px;background:#D1FAE5;border-radius:8px;border-left:4px solid #10B981;">
             <div style="font-size:13px;font-weight:bold;color:#065F46;margin-bottom:4px;">🏗️ Interesado en anuncio</div>
-            <div style="font-size:13px;color:#065F46;">${anuncio.titulo || ''} <span style="background:#C0161C;color:#fff;font-size:11px;padding:1px 7px;border-radius:10px;margin-left:4px;">${anuncio.referencia || ''}</span></div>
-            ${anuncio.descuento_monto ? `<div style="font-size:12px;color:#065F46;margin-top:4px;">Descuento aplicado: <strong>${anuncio.descuento_moneda === 'USD' ? 'US$' : 'RD$'}${Number(anuncio.descuento_monto).toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>${anuncio.descuento_codigo ? ` · Código: <code>${anuncio.descuento_codigo}</code>` : ''}</div>` : ''}
+            <div style="font-size:13px;color:#065F46;">${esc(anuncio.titulo)} <span style="background:#C0161C;color:#fff;font-size:11px;padding:1px 7px;border-radius:10px;margin-left:4px;">${esc(anuncio.referencia)}</span></div>
+            ${anuncio.descuento_monto ? `<div style="font-size:12px;color:#065F46;margin-top:4px;">Descuento aplicado: <strong>${anuncio.descuento_moneda === 'USD' ? 'US$' : 'RD$'}${Number(anuncio.descuento_monto).toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>${anuncio.descuento_codigo ? ` · Código: <code>${esc(anuncio.descuento_codigo)}</code>` : ''}</div>` : ''}
           </div>` : ''}
           ${sectionHtml('🔍 ¿Por qué este resultado?', whyHtml)}
           ${sectionHtml('📈 Acciones para mejorar la probabilidad', simsHtml)}
@@ -135,7 +141,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         from: NOTIFY_FROM,
         to: [NOTIFY_TO],
-        subject: `🎯 Nuevo lead: ${lead.nombre || 'Sin nombre'} — ${e1.sc != null ? e1.sc + '%' : '-'}`,
+        subject: `🎯 Nuevo lead: ${asunto(lead.nombre) || 'Sin nombre'} — ${e1.sc != null ? asunto(e1.sc) + '%' : '-'}`,
         html,
       }),
     });

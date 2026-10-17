@@ -468,6 +468,12 @@ const ATRASO_LABELS: Record<number, string> = {
   0: 'Sin atrasos', 30: 'Hasta 30 días', 45: '31-60 días', 90: 'Más de 60 días',
 };
 
+const esc = (v: unknown): string =>
+  String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+// Para el asunto del correo: texto plano sin saltos de línea ni exceso de largo.
+const asunto = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ').slice(0, 60);
+
 function fmtMoneyEmail(n: number | null | undefined, currency: string) {
   if (n == null) return '-';
   const symbol = currency === 'USD' ? 'US$' : 'RD$';
@@ -528,7 +534,7 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
 
   const rows: string[] = [];
   const row = (label: string, value: string) =>
-    `<tr><td style="padding:4px 10px;color:#666;font-size:13px;">${label}</td><td style="padding:4px 10px;font-size:13px;"><b>${value}</b></td></tr>`;
+    `<tr><td style="padding:4px 10px;color:#666;font-size:13px;">${label}</td><td style="padding:4px 10px;font-size:13px;"><b>${esc(value)}</b></td></tr>`;
 
   rows.push(row('Nombre', `${lead.nombre || ''} ${lead.apellido || ''}`.trim() || '-'));
   rows.push(row('WhatsApp', lead.telefono || '-'));
@@ -574,16 +580,16 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
   const WHY_COLOR: Record<string, string> = { ok: '#065F46', w: '#92400E', b: '#991B1B' };
   const whyHtml = why.map((w) =>
     `<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:${w.t === 'ok' ? '#F0FDF4' : w.t === 'w' ? '#FFFBEB' : '#FEF2F2'};">
-      <div style="font-size:13px;font-weight:bold;color:${WHY_COLOR[w.t] || '#333'};">${WHY_ICON[w.t] || '•'} ${w.x}</div>
-      <div style="font-size:12px;color:#555;margin-top:3px;">${w.s}</div>
+      <div style="font-size:13px;font-weight:bold;color:${WHY_COLOR[w.t] || '#333'};">${WHY_ICON[w.t] || '•'} ${esc(w.x)}</div>
+      <div style="font-size:12px;color:#555;margin-top:3px;">${esc(w.s)}</div>
     </div>`).join('');
 
   const simsFiltered = sims.filter((s) => s.d > 0);
   const simsHtml = simsFiltered.map((s) =>
     `<div style="margin-bottom:6px;padding:7px 12px;border-radius:6px;background:#EFF6FF;font-size:12px;">
-      <span style="font-weight:bold;color:#1D4ED8;">+${s.d}%</span>
-      <span style="color:#333;margin-left:6px;">${s.l}</span>
-      <span style="color:#6B7280;margin-left:6px;">→ llegaría a ${s.b}%</span>
+      <span style="font-weight:bold;color:#1D4ED8;">+${esc(s.d)}%</span>
+      <span style="color:#333;margin-left:6px;">${esc(s.l)}</span>
+      <span style="color:#6B7280;margin-left:6px;">→ llegaría a ${esc(s.b)}%</span>
     </div>`).join('');
 
   const section = (title: string, htmlRows: string[]) =>
@@ -593,8 +599,8 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
 
   const comentariosHtml = (comentarios || []).map((cm) =>
     `<div style="margin-bottom:8px;padding:8px 12px;border-radius:6px;background:#F9FAFB;border-left:3px solid #C0161C;">
-      <div style="font-size:11px;color:#6B7280;margin-bottom:3px;"><strong>${cm.autor}</strong> · ${new Date(cm.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</div>
-      <div style="font-size:12px;color:#333;white-space:pre-wrap;">${cm.comentario}</div>
+      <div style="font-size:11px;color:#6B7280;margin-bottom:3px;"><strong>${esc(cm.autor)}</strong> · ${new Date(cm.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}</div>
+      <div style="font-size:12px;color:#333;white-space:pre-wrap;">${esc(cm.comentario)}</div>
     </div>`).join('');
 
   const html = `
@@ -621,7 +627,7 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
     body: JSON.stringify({
       from: 'PrecalificateRD <onboarding@resend.dev>',
       to: [toEmail],
-      subject: `📤 Lead reenviado: ${lead.nombre || 'Sin nombre'} — ${e1.sc != null ? e1.sc + '%' : '-'}`,
+      subject: `📤 Lead reenviado: ${asunto(lead.nombre) || 'Sin nombre'} — ${e1.sc != null ? asunto(e1.sc) + '%' : '-'}`,
       html,
     }),
   });

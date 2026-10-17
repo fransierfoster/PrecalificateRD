@@ -927,7 +927,9 @@ function render() {
         // POPUP_SOLO_E2 (opcion del admin): el popup de lead solo se muestra
         // si el resultado que lo dispara viene del Escenario 2 -- no afecta
         // al popup de anuncios, que tiene su propia logica de score_minimo.
-        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70 && (!POPUP_SOLO_E2 || _isE2Lead) && ANUNCIOS_ACTIVOS.length === 0) { showLeadPopup(_scLead, _isE2Lead, _bancoPopup); }
+        // Si hay anuncios activos pero ninguno aplica a este resultado, se
+        // muestra el popup de lead normal.
+        if (ad) { showAdPopup(ad, _scAd); } else if (_scLead >= 70 && (!POPUP_SOLO_E2 || _isE2Lead)) { showLeadPopup(_scLead, _isE2Lead, _bancoPopup); }
       }, 2500);
     } else if (e1.sc < 70) {
       // Ninguno de los dos escenarios llego a 70% -- el cliente puede asumir
