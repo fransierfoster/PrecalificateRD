@@ -653,6 +653,14 @@ function renderBancosE2() {
   wrap.innerHTML = '<div class="bank-row">' + chips + '</div>';
 }
 
+// Nota bajo la cuota: con seguros activos explica lo que incluye; apagados, mantiene el aviso original.
+function notaCuota(e) {
+  if (SD.segurosActivo && e && e.cSegDOP > 0) {
+    return 'Incluye seguros estimados de vida y de propiedad. Son tarifas referenciales y varían según la aseguradora y la entidad financiera. No incluye impuestos ni gastos de cierre.';
+  }
+  return 'No incluye seguros. Los seguros varían según la institución financiera.';
+}
+
 function render() {
   renderBancos();
   renderBancosE2();
@@ -672,6 +680,8 @@ function render() {
   document.getElementById('e1cr').textContent = fmtr(e1.cDOP) + '/mes';
 
   document.getElementById('e1th').textContent = th;
+  var nota1 = document.getElementById('e1th').nextElementSibling;
+  if (nota1) nota1.textContent = notaCuota(e1);
 
   var b1 = bdg(e1.sc);
   anim('r1', 'p1', e1.sc, b1.k);
@@ -774,6 +784,8 @@ function render() {
       document.getElementById('e2cr').textContent = fmtr(e2.cDOP) + '/mes';
 
       document.getElementById('e2th').textContent = th;
+      var nota2 = document.getElementById('e2th').nextElementSibling;
+      if (nota2) nota2.textContent = notaCuota(e2);
 
       var b2 = bdg(e2.sc);
       anim('r2', 'p2', e2.sc, b2.k);
@@ -1084,7 +1096,7 @@ function showLeadPopup(sc, isE2, banco) {
       var cuotaEl = document.getElementById('lead-popup-e2-cuota');
       if (cuotaEl) {
         if (_src.e2 && _src.e2.cDOP) {
-          cuotaEl.textContent = 'Cuota estimada: ' + fmt(_src.e2.cDOP) + '/mes';
+          cuotaEl.textContent = 'Cuota estimada' + (SD.segurosActivo ? ' (con seguros)' : '') + ': ' + fmt(_src.e2.cDOP) + '/mes';
           cuotaEl.style.display = 'block';
         } else {
           cuotaEl.style.display = 'none';
@@ -1386,7 +1398,7 @@ function compartir() {
   txt += '📋 Escenario 1 — La propiedad que quieres\n';
   txt += '💰 Propiedad evaluada: ' + fmt(SD.vinmDOP) + '\n';
   txt += '🏦 Monto a financiar: ' + fmt(SD.prDOP) + '\n';
-  txt += '📅 Cuota mensual estimada: ' + fmt(e1.cDOP) + '\n';
+  txt += '📅 Cuota mensual estimada' + (SD.segurosActivo ? ' (incluye seguros estimados)' : '') + ': ' + fmt(e1.cDOP) + '\n';
   txt += '📊 Probabilidad de aprobación: ' + e1.sc + '% (' + nivelTxt(e1.sc) + ')\n';
 
   var showE2 = e1.sc < 70;
@@ -1614,6 +1626,7 @@ function calc() {
       tieneCD: tieneCD, ingCDDOP: ingCDDOP, ingDOP: ingDOP,
       expcCD: expcCD, antCredCD: antCredCD, prodsCD: prodsCD,
       atrawCD: atrawCD, atpatCD: atpatCD, empCD: empCD, antCD: antCD, paisCD: paisCD,
+      segurosActivo: res.segurosActivo === true,
       e2Reached: res.e2Reached, rIn: rIn, mp: mp, virDOPMin: res.virDOPMin, e2NoViable: res.e2NoViable,
       tinm: document.getElementById('tinm').value,
       bancos: (res.bancos && res.bancos.length > 1) ? res.bancos : null,
@@ -2162,7 +2175,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
       ['Valor del inmueble', fmtRD(SD.vinmDOP) + ' / US$' + Math.round(SD.vinmDOP / TC).toLocaleString('en-US')],
       ['Inicial disponible', fmtRD(SD.iniDOP) + ' (' + Math.round(SD.iniDOP / (SD.vinmDOP || 1) * 100) + '%)'],
       ['Monto a financiar', fmtRD(SD.prDOP)],
-      ['Cuota mensual estimada', fmtRD(SD.e1.cDOP)],
+      ['Cuota mensual estimada' + (SD.segurosActivo ? ' (con seguros)' : ''), fmtRD(SD.e1.cDOP)],
       ['Tasa de referencia', tasaTxt],
       ['Plazo', '20 años'],
     ];
@@ -2198,7 +2211,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
         ['Valor óptimo', fmtRD(SD.virDOP) + ' / US$' + Math.round(SD.virDOP / TC).toLocaleString('en-US')],
         ['Inicial sugerida', fmtRD(SD.isiDOP) + ' (' + Math.round(SD.isiDOP / (SD.virDOP || 1) * 100) + '%)'],
         ['Monto a financiar', fmtRD(SD.mrDOP)],
-        ['Cuota mensual estimada', fmtRD(SD.e2.cDOP)],
+        ['Cuota mensual estimada' + (SD.segurosActivo ? ' (con seguros)' : ''), fmtRD(SD.e2.cDOP)],
         ['Tasa de referencia', tasaTxt],
         ['Plazo', '20 años'],
       ];
@@ -2387,7 +2400,7 @@ function generarPDF(nom, ape, cedTxt, tel, email) {
 
     doc.setDrawColor(RULE[0], RULE[1], RULE[2]); doc.line(mL, y, PW - mR_pdf, y); y += 4;
     doc.setFontSize(7); doc.setTextColor(INK3[0], INK3[1], INK3[2]);
-    var legalLines = doc.splitTextToSize('Este documento fue generado automáticamente por PrecalificateRD y tiene carácter únicamente orientativo. No constituye una aprobación, oferta ni compromiso de financiamiento por parte de ninguna entidad bancaria ni de Perfect House SRL. Las tasas y condiciones son de referencia y pueden variar según la entidad financiera.', cW);
+    var legalLines = doc.splitTextToSize('Este documento fue generado automáticamente por PrecalificateRD y tiene carácter únicamente orientativo. No constituye una aprobación, oferta ni compromiso de financiamiento por parte de ninguna entidad bancaria ni de Perfect House SRL. Las tasas y condiciones son de referencia y pueden variar según la entidad financiera.' + (SD.segurosActivo ? ' La cuota mensual incluye seguro de vida y seguro de propiedad estimados con tarifas referenciales, que varían según la aseguradora y la entidad financiera; no incluye impuestos ni gastos de cierre.' : ''), cW);
     doc.text(legalLines, mL, y); y += legalLines.length * 3.5 + 4;
     doc.text('Ref: ' + refNum, PW / 2, y, { align: 'center' });
 
@@ -2431,7 +2444,7 @@ function initPrecal() {
     });
     setTimeout(function () {
       var sp = document.querySelector('#restore-banner span');
-      if (sp) sp.textContent = '🧮 Cargamos desde la calculadora el valor de la vivienda y tu inicial.';
+      if (sp) sp.textContent = '🧮 Cargamos desde la calculadora los datos que ya ingresaste.';
       showS(1);
       ssc();
       try {

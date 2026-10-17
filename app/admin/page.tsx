@@ -237,6 +237,7 @@ export default async function AdminPage() {
 
   const finParams = groups.fin || [];
   const uiParams = groups.ui || [];
+  const finSeguros = finParams.find((p) => p.clave === 'fin_seguros_activo');
   const factorKeys = new Set(FACTOR_DEFS.map((f) => f.key));
   const otrosCats = Object.keys(groups).filter((c) => c !== 'pesos' && c !== 'fin' && c !== 'ui' && !factorKeys.has(c));
 
@@ -439,6 +440,14 @@ export default async function AdminPage() {
               description="Si está activo, el popup de arriba solo aparece cuando el resultado que califica viene del Escenario 2 (la oferta que armamos automáticamente), no del Escenario 1"
             />
           )}
+          {finSeguros && (
+            <ToggleParamForm
+              clave={finSeguros.clave}
+              valor={finSeguros.valor}
+              label="Incluir seguros en la cuota"
+              description="Suma el seguro de vida y de propiedad estimados a la cuota que ve el cliente y al endeudamiento del motor, y muestra la nota aclaratoria. Si lo desactivas, vuelve el cálculo anterior y desaparece esa nota. Las tarifas se editan abajo, en Parámetros financieros."
+            />
+          )}
           {uiContador && (
             <ToggleParamForm
               clave={uiContador.clave}
@@ -477,7 +486,7 @@ export default async function AdminPage() {
               <div>
                 <h3>Parámetros financieros</h3>
                 <div className="adm-params-grid">
-                  {finParams.map((p) => (
+                  {finParams.filter((p) => p.clave !== 'fin_seguros_activo').map((p) => (
                     <ParamForm key={p.clave} clave={p.clave} valor={p.valor} descripcion={p.descripcion} />
                   ))}
                 </div>

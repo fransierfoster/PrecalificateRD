@@ -15,15 +15,35 @@ interface Opcion {
   ingresoMaxUsd: number | null;
 }
 
+interface OpcionP {
+  pct: number;
+  precioMin: number | null;
+  precioMax: number | null;
+  precioMinOtro: number | null;
+  precioMaxOtro: number | null;
+  inicialMin: number | null;
+  inicialMax: number | null;
+  cuotaMin: number | null;
+  cuotaMax: number | null;
+}
+
+type Modo = 'precio' | 'ingreso';
+
 type Interes = 'asesoria' | 'ofertas';
 
 type Estado =
   | { s: 'idle' }
   | { s: 'cargando' }
-  | { s: 'ok'; moneda: Moneda; valor: number; opciones: Opcion[] }
+  | { s: 'ok'; modo: Modo; moneda: Moneda; valor: number; opciones: Opcion[]; opcionesP: OpcionP[]; conSeguros: boolean }
   | { s: 'error'; msg: string; limite?: boolean };
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-US');
+
+const corto = (n: number) =>
+  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M` : n >= 10_000 ? `${Math.round(n / 1000)}K` : fmt(n);
+
+const rangoCorto = (a: number | null, b: number | null, sym: string) =>
+  b == null ? '' : a != null ? `${sym} ${corto(a)} – ${corto(b)}` : `hasta ${sym} ${corto(b)}`;
 
 function esTest() {
   try { return new URLSearchParams(window.location.search).get('test') === '1'; } catch { return false; }
@@ -58,6 +78,7 @@ function irAlFormulario() {
 
 export default function CalculadoraClient() {
   const [moneda, setMoneda] = useState<Moneda>('DOP');
+  const [modo, setModo] = useState<Modo>('precio');
   const [valorTxt, setValorTxt] = useState('');
   const [estado, setEstado] = useState<Estado>({ s: 'idle' });
   const [pctSel, setPctSel] = useState(80);
@@ -90,23 +111,40 @@ export default function CalculadoraClient() {
   useEffect(() => {
     seq.current++;
     setEstado({ s: 'idle' });
-  }, [valor, moneda]);
+  }, [valor, moneda, modo]);
+
+  function cambiarModo(m: Modo) {
+    if (m === modo) return;
+    setModo(m);
+    setValorTxt('');
+    setPaso('resultados');
+  }
 
   async function calcular() {
     if (!valor || estado.s === 'cargando') return;
     track('calc_calcular');
+    if (modo === 'ingreso') track('calc_calcular_ingreso');
     setEstado({ s: 'cargando' });
     const mi = ++seq.current;
     try {
       const res = await fetch('/api/calculadora', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ valor, moneda }),
+        body: JSON.stringify({ modo, valor, moneda }),
       });
       const data = await res.json();
       if (mi !== seq.current) return;
       if (res.ok && data.ok) {
-        setEstado({ s: 'ok', moneda: data.moneda, valor: data.valor, opciones: data.opciones });
+        setEstado({
+          s: 'ok', modo, moneda: data.moneda,
+          valor: modo === 'ingreso' ? data.ingreso : data.valor,
+          opciones: modo === 'precio' ? data.opciones : [],
+          opcionesP: modo === 'ingreso' ? data.opciones : [],
+          conSeguros: data.conSeguros === true,
+        });
+      } else if (data.error === 'bajo') {
+        const sym = moneda === 'USD' ? 'US$' : 'RD$';
+        setEstado({ s: 'error', msg: `Con ese ingreso todavía no alcanzaría para el precio mínimo de una vivienda (${sym} ${fmt(data.minimo)}). Un asesor puede evaluar tu caso.` });
       } else if (data.error === 'min') {
         const sym = moneda === 'USD' ? 'US$' : 'RD$';
         setEstado({ s: 'error', msg: `El precio mínimo de una vivienda para financiamiento hipotecario ronda los ${sym} ${fmt(data.minimo)}.` });
@@ -150,6 +188,7 @@ export default function CalculadoraClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             nombre, apellido, tel, email,
+            modo: estado.s === 'ok' ? estado.modo : modo,
             valor: estado.s === 'ok' ? estado.valor : valor,
             moneda: estado.s === 'ok' ? estado.moneda : moneda,
             pct: estado.s === 'ok' ? pctSel : null,
@@ -180,7 +219,13 @@ export default function CalculadoraClient() {
     try {
       const raw = localStorage.getItem('precalRD_form');
       const prev = raw ? JSON.parse(raw) : {};
-      if (valor) localStorage.setItem('precalRD_form', JSON.stringify({ ...prev, mprecio: moneda, vinm: fmt(valor) }));
+      if (valor) {
+        localStorage.setItem('precalRD_form', JSON.stringify(
+          modo === 'ingreso'
+            ? { ...prev, ming: moneda, mr: moneda, mprecio: moneda, ing: fmt(valor) }
+            : { ...prev, mprecio: moneda, vinm: fmt(valor) },
+        ));
+      }
       localStorage.setItem('precalRD_calc', JSON.stringify({ interes, pct: null, fuente: leerFuente(), ts: Date.now() }));
     } catch {}
     track('calc_continuar');
@@ -190,23 +235,34 @@ export default function CalculadoraClient() {
   function continuar() {
     if (estado.s !== 'ok') return;
     if (interes === 'ofertas') { irAContacto(); return; }
-    const op = estado.opciones.find((o) => o.pct === pctSel) || estado.opciones[0];
+    let datos: Record<string, string>;
+    if (estado.modo === 'ingreso') {
+      const op = estado.opcionesP.find((o) => o.pct === pctSel) || estado.opcionesP[0];
+      const paso = estado.moneda === 'USD' ? 5000 : 100000;
+      const precio = op.precioMin != null && op.precioMax != null
+        ? Math.round((op.precioMin + op.precioMax) / 2 / paso) * paso
+        : (op.precioMax ?? op.precioMin);
+      datos = { ming: estado.moneda, mr: estado.moneda, mprecio: estado.moneda, ing: fmt(estado.valor) };
+      if (precio != null) {
+        datos.vinm = fmt(precio);
+        datos.ini = fmt(precio * (100 - op.pct) / 100);
+      }
+    } else {
+      const op = estado.opciones.find((o) => o.pct === pctSel) || estado.opciones[0];
+      datos = { mprecio: estado.moneda, vinm: fmt(estado.valor), ini: fmt(op.inicial) };
+    }
     try {
       const raw = localStorage.getItem('precalRD_form');
       const prev = raw ? JSON.parse(raw) : {};
-      localStorage.setItem('precalRD_form', JSON.stringify({
-        ...prev,
-        mprecio: estado.moneda,
-        vinm: fmt(estado.valor),
-        ini: fmt(op.inicial),
-      }));
-      localStorage.setItem('precalRD_calc', JSON.stringify({ interes, pct: op.pct, fuente: leerFuente(), ts: Date.now() }));
+      localStorage.setItem('precalRD_form', JSON.stringify({ ...prev, ...datos }));
+      localStorage.setItem('precalRD_calc', JSON.stringify({ interes, pct: pctSel, fuente: leerFuente(), ts: Date.now() }));
     } catch {}
     track('calc_continuar');
     irAlFormulario();
   }
 
-  const sel = estado.s === 'ok' ? (estado.opciones.find((o) => o.pct === pctSel) || estado.opciones[0]) : null;
+  const sel = estado.s === 'ok' && estado.modo === 'precio' ? (estado.opciones.find((o) => o.pct === pctSel) || estado.opciones[0]) : null;
+  const selP = estado.s === 'ok' && estado.modo === 'ingreso' ? (estado.opcionesP.find((o) => o.pct === pctSel) || estado.opcionesP[0]) : null;
   const symRes = estado.s === 'ok' && estado.moneda === 'USD' ? 'US$' : 'RD$';
 
   return (
@@ -239,14 +295,33 @@ export default function CalculadoraClient() {
 
       <main style={{ maxWidth: 940, margin: '0 auto', padding: `24px 16px ${estado.s === 'ok' && paso === 'resultados' ? 150 : 48}px` }}>
         <div style={{ display: paso === 'resultados' ? 'block' : 'none' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 6px', letterSpacing: '-0.3px', lineHeight: 1.25 }}>¿Cuánto necesito ganar para comprar?</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 6px', letterSpacing: '-0.3px', lineHeight: 1.25 }}>
+          Calcula tu capacidad de compra
+        </h1>
         <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.55, margin: '0 0 18px' }}>
-          Escribe el valor de la vivienda y te mostramos el ingreso mensual aproximado que necesitarías según cuánto quieras financiar.
+          Elige cómo calcular: por precio, te decimos el ingreso aproximado que necesitas; por ingreso, el precio de vivienda que podrías comprar, según cuánto quieras financiar.
         </p>
 
         <div style={{ background: '#fff', borderRadius: 16, padding: '16px 16px 18px', boxShadow: '0 2px 20px rgba(0,0,0,.07)', marginBottom: 14 }}>
+          <div role="group" aria-label="Calcular por" style={{ display: 'flex', background: '#F3F0ED', borderRadius: 10, padding: 3, marginBottom: 14 }}>
+            {([['precio', 'Por precio'], ['ingreso', 'Por ingreso']] as const).map(([m, txt]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => cambiarModo(m)}
+                aria-pressed={modo === m}
+                style={{
+                  flex: 1, padding: '10px 8px', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
+                  background: modo === m ? '#fff' : 'transparent', color: modo === m ? '#0D0D0D' : '#6B7280',
+                  boxShadow: modo === m ? '0 1px 4px rgba(0,0,0,.12)' : 'none',
+                }}
+              >
+                {txt}
+              </button>
+            ))}
+          </div>
           <label htmlFor="valor" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, letterSpacing: '.04em', textTransform: 'uppercase' }}>
-            Valor de la vivienda
+            {modo === 'precio' ? 'Valor de la vivienda' : 'Ingreso mensual'}
           </label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
             <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', border: '1.5px solid #E5E2DF', borderRadius: 10, background: '#F9F8F7', padding: '0 12px' }}>
@@ -258,7 +333,7 @@ export default function CalculadoraClient() {
                 value={valorTxt}
                 onChange={(e) => onValor(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') calcular(); }}
-                placeholder="6,500,000"
+                placeholder={modo === 'precio' ? '6,500,000' : '150,000'}
                 style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 18, fontWeight: 600, padding: '13px 0', fontFamily: 'inherit' }}
               />
             </div>
@@ -310,7 +385,49 @@ export default function CalculadoraClient() {
               1. Elige cuánto quieres financiar
             </div>
             <div className="calc-grid" style={{ marginBottom: 10 }}>
-              {estado.opciones.map((o) => {
+              {estado.modo === 'ingreso' && estado.opcionesP.map((o) => {
+                const sym = estado.moneda === 'USD' ? 'US$' : 'RD$';
+                const otro = estado.moneda === 'USD' ? 'RD$' : 'US$';
+                return (
+                  <button
+                    key={o.pct}
+                    type="button"
+                    className={`calc-card${o.pct === pctSel ? ' sel' : ''}`}
+                    onClick={() => setPctSel(o.pct)}
+                    aria-pressed={o.pct === pctSel}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 10px', marginBottom: 10 }}>
+                      <span className="calc-radio" aria-hidden="true" />
+                      <span style={{ fontSize: 15, fontWeight: 700 }}>Financiar {o.pct}%</span>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#6B7280' }}>· inicial {100 - o.pct}%</span>
+                    </div>
+                    {o.pct === 80 && (
+                      <span style={{ position: 'absolute', top: -10, right: 14, fontSize: 11, fontWeight: 700, background: '#C0161C', color: '#fff', padding: '2px 9px', borderRadius: 20 }}>Más común</span>
+                    )}
+                    {o.precioMax == null ? (
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#1D3A8A' }}>Lo evalúa un asesor contigo</div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#1D3A8A', letterSpacing: '-0.3px' }}>
+                          {o.precioMin != null ? `${sym} ${fmt(o.precioMin)} – ${fmt(o.precioMax)}` : `Hasta ${sym} ${fmt(o.precioMax)}`}
+                        </div>
+                        <div style={{ fontSize: 13, color: '#6B7280', marginTop: 1 }}>
+                          de vivienda · ≈ {o.precioMin != null && o.precioMinOtro != null && o.precioMaxOtro != null
+                            ? `${otro} ${fmt(o.precioMinOtro)} – ${fmt(o.precioMaxOtro)}`
+                            : `hasta ${otro} ${fmt(o.precioMaxOtro ?? 0)}`}
+                        </div>
+                      </>
+                    )}
+                    {o.precioMax != null && (
+                      <div style={{ borderTop: '1px solid #EFECE9', marginTop: 8, paddingTop: 8, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '2px 10px', fontSize: 12.5, color: '#6B7280' }}>
+                        <span>Inicial <b style={{ color: '#0D0D0D' }}>{rangoCorto(o.inicialMin, o.inicialMax, sym)}</b></span>
+                        <span>Cuota <b style={{ color: '#0D0D0D' }}>{rangoCorto(o.cuotaMin, o.cuotaMax, sym)}</b></span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+              {estado.modo === 'precio' && estado.opciones.map((o) => {
                 const sym = estado.moneda === 'USD' ? 'US$' : 'RD$';
                 return (
                   <button
@@ -380,8 +497,15 @@ export default function CalculadoraClient() {
                 </span>
               </button>
             </div>
+            {estado.conSeguros && (
+              <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55, margin: '16px 0 0' }}>
+                La cuota incluye seguro de vida y seguro de propiedad estimados con tarifas referenciales; varían según la aseguradora y la entidad financiera. No incluye impuestos ni gastos de cierre.
+              </p>
+            )}
             <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55, margin: '16px 0 0' }}>
-              Rango orientativo: va desde un perfil crediticio sólido hasta uno exigente. No es una aprobación ni una oferta de una entidad financiera. El servicio es gratis y sin compromiso. La precalificación no afecta tu historial crediticio.
+              {modo === 'precio'
+                ? 'Rango orientativo: va desde un perfil crediticio sólido hasta uno exigente.'
+                : 'Rango orientativo: el precio más bajo corresponde a un perfil crediticio exigente y el más alto a uno sólido.'} No es una aprobación ni una oferta de una entidad financiera. El servicio es gratis y sin compromiso. La precalificación no afecta tu historial crediticio.
             </p>
           </div>
         )}
@@ -402,12 +526,28 @@ export default function CalculadoraClient() {
             </p>
 
             <div style={{ background: '#fff', border: '1px solid #E5E2DF', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: '#374151', lineHeight: 1.5, marginBottom: 14 }}>
-              Vivienda de interés: <b>{symRes} {fmt(estado.s === 'ok' ? estado.valor : valor)}</b>
-              {sel && (
+              {modo === 'ingreso' ? (
                 <>
-                  {' '}· financiando <b>{sel.pct}%</b>
-                  {sel.ingresoMin != null && (
-                    <> · ingreso aprox. <b>RD$ {fmt(sel.ingresoMin)}{sel.ingresoMax != null ? ` – ${fmt(sel.ingresoMax)}` : '+'}</b></>
+                  Ingreso mensual: <b>{simbolo} {fmt(estado.s === 'ok' ? estado.valor : valor)}</b>
+                  {selP && (
+                    <>
+                      {' '}· financiando <b>{selP.pct}%</b>
+                      {selP.precioMax != null && (
+                        <> · vivienda aprox. <b>{selP.precioMin != null ? `${simbolo} ${corto(selP.precioMin)} – ${corto(selP.precioMax)}` : `hasta ${simbolo} ${corto(selP.precioMax)}`}</b></>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  Vivienda de interés: <b>{symRes} {fmt(estado.s === 'ok' ? estado.valor : valor)}</b>
+                  {sel && (
+                    <>
+                      {' '}· financiando <b>{sel.pct}%</b>
+                      {sel.ingresoMin != null && (
+                        <> · ingreso aprox. <b>RD$ {fmt(sel.ingresoMin)}{sel.ingresoMax != null ? ` – ${fmt(sel.ingresoMax)}` : '+'}</b></>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -490,11 +630,15 @@ export default function CalculadoraClient() {
         )}
       </main>
 
-      {estado.s === 'ok' && sel && paso === 'resultados' && (
+      {estado.s === 'ok' && (sel || selP) && paso === 'resultados' && (
         <div className="calc-bar">
           <div className="calc-bar-in">
             <div className="calc-bar-txt">
-              <b>Financiando {sel.pct}%</b> · inicial {symRes} {fmt(sel.inicial)}
+              {sel ? (
+                <><b>Financiando {sel.pct}%</b> · inicial {symRes} {fmt(sel.inicial)}</>
+              ) : selP ? (
+                <><b>Financiando {selP.pct}%</b>{selP.precioMax != null && <> · vivienda {rangoCorto(selP.precioMin, selP.precioMax, symRes)}</>}</>
+              ) : null}
               <span className="calc-bar-sub"><br />
                 {interes === 'ofertas'
                   ? 'Recibir opciones de propiedades es gratis y sin compromiso.'

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calcularInversa } from '@/lib/calculadora-inversa';
+import { calcularInversa, calcularPorIngreso } from '@/lib/calculadora-inversa';
 import { ipDe } from '@/lib/limite-uso';
 
 export const runtime = 'nodejs';
@@ -51,18 +51,31 @@ export async function POST(req: NextRequest) {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: 'email' }, { status: 400 });
     if (body?.consentimiento !== true) return NextResponse.json({ error: 'consentimiento' }, { status: 400 });
 
-    const calc = await calcularInversa(Number(body?.valor), moneda);
-    if (!calc.ok) return NextResponse.json({ error: 'valor' }, { status: 400 });
-
     const sym = moneda === 'USD' ? 'US$' : 'RD$';
-    const op = calc.opciones.find((o) => o.pct === pct) || null;
-    const partes = [`Calculadora${fuente ? ` (${fuente})` : ''}: solicita opciones de propiedades en su rango.`, `Vivienda de interés: ${sym} ${fmt(calc.valor)}.`];
-    if (op) {
-      partes.push(`Financiaría ${op.pct}% (inicial ${sym} ${fmt(op.inicial)}, cuota aprox. ${sym} ${fmt(op.cuota)}).`);
-      if (op.ingresoMin != null) {
-        partes.push(op.ingresoMax != null
-          ? `Ingreso mensual aprox. requerido: RD$ ${fmt(op.ingresoMin)} – ${fmt(op.ingresoMax)}.`
-          : `Ingreso mensual aprox. requerido: desde RD$ ${fmt(op.ingresoMin)}.`);
+    const base = `Calculadora${fuente ? ` (${fuente})` : ''}: solicita opciones de propiedades en su rango.`;
+    let partes: string[];
+
+    if (body?.modo === 'ingreso') {
+      const calc = await calcularPorIngreso(Number(body?.valor), moneda);
+      if (!calc.ok) return NextResponse.json({ error: 'valor' }, { status: 400 });
+      const op = calc.opciones.find((o) => o.pct === pct) || null;
+      partes = [base, `Ingreso mensual declarado: ${sym} ${fmt(calc.ingreso)}.`];
+      if (op && op.precioMax != null) {
+        partes.push(`Financiaría ${op.pct}%: vivienda aprox. ${op.precioMin != null ? `${sym} ${fmt(op.precioMin)} – ${fmt(op.precioMax)}` : `hasta ${sym} ${fmt(op.precioMax)}`}.`);
+        if (op.inicialMax != null) partes.push(`Inicial aprox. ${op.inicialMin != null ? `${sym} ${fmt(op.inicialMin)} – ${fmt(op.inicialMax)}` : `hasta ${sym} ${fmt(op.inicialMax)}`}.`);
+      }
+    } else {
+      const calc = await calcularInversa(Number(body?.valor), moneda);
+      if (!calc.ok) return NextResponse.json({ error: 'valor' }, { status: 400 });
+      const op = calc.opciones.find((o) => o.pct === pct) || null;
+      partes = [base, `Vivienda de interés: ${sym} ${fmt(calc.valor)}.`];
+      if (op) {
+        partes.push(`Financiaría ${op.pct}% (inicial ${sym} ${fmt(op.inicial)}, cuota aprox. ${sym} ${fmt(op.cuota)}${calc.conSeguros ? ' con seguros estimados' : ''}).`);
+        if (op.ingresoMin != null) {
+          partes.push(op.ingresoMax != null
+            ? `Ingreso mensual aprox. requerido: RD$ ${fmt(op.ingresoMin)} – ${fmt(op.ingresoMax)}.`
+            : `Ingreso mensual aprox. requerido: desde RD$ ${fmt(op.ingresoMin)}.`);
+        }
       }
     }
     const notas = partes.join(' ');

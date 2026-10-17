@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     e1Rows.push(row('Valor inmueble', fmtMoney(sd.vinmDOP, currency)));
     e1Rows.push(row('Monto a financiar', fmtMoney(sd.prDOP, currency)));
     e1Rows.push(row('Inicial', fmtMoney(sd.iniDOP, currency)));
-    e1Rows.push(row('Cuota mensual', fmtMoney(e1.cDOP, currency)));
+    e1Rows.push(row(sd.segurosActivo ? 'Cuota mensual (con seguros estimados)' : 'Cuota mensual', fmtMoney(e1.cDOP, currency)));
     e1Rows.push(row('Capacidad de endeudamiento', e1.dti != null ? Math.round(e1.dti * 100) + '%' : '-'));
     e1Rows.push(row('Probabilidad (Score E1)', (e1.sc != null ? e1.sc : '-') + '%'));
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calcularInversa } from '@/lib/calculadora-inversa';
+import { calcularInversa, calcularPorIngreso } from '@/lib/calculadora-inversa';
 
 export const runtime = 'nodejs';
 
@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
     const valor = Number(body?.valor);
     const moneda = body?.moneda === 'USD' ? 'USD' : 'DOP';
 
-    const r = await calcularInversa(valor, moneda);
+    const r = body?.modo === 'ingreso'
+      ? await calcularPorIngreso(valor, moneda)
+      : await calcularInversa(valor, moneda);
     if (!r.ok) {
       return NextResponse.json(r, { status: 400 });
     }

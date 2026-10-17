@@ -544,7 +544,7 @@ export async function sendLeadEmailTo(formData: FormData): Promise<{ ok: boolean
   e1Rows.push(row('Valor inmueble', fmtMoneyEmail(c.vinm_dop, mr)));
   e1Rows.push(row('Monto a financiar', fmtMoneyEmail(c.pr_dop, mr)));
   e1Rows.push(row('Inicial', fmtMoneyEmail(c.ini_dop, mr)));
-  e1Rows.push(row('Cuota mensual', fmtMoneyEmail(e1.cDOP, mr)));
+  e1Rows.push(row(p.fin.segurosActivo ? 'Cuota mensual (con seguros estimados)' : 'Cuota mensual', fmtMoneyEmail(e1.cDOP, mr)));
   e1Rows.push(row('Capacidad de endeudamiento', e1.dti != null ? Math.round(e1.dti * 100) + '%' : '-'));
   e1Rows.push(row('Probabilidad (Score E1)', (e1.sc != null ? e1.sc : '-') + '%'));
 

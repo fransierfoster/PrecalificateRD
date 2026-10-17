@@ -19,6 +19,9 @@ const DEF_EST   = { formal:94, pension:60, remesa:78, empresario:91, independien
 const DEF_PAIS  = { DO:94, US:78, PR:77, CA:75, ES:75, otro:61 };
 const DEF_ACT   = { noDeclara:41, menos10:57, r10_30:75, mas30:86 };
 const DEF_EDAD  = { e18_24:35, e25_45:81, e46_55:89, e56_60:66, mas60:50 };
+// Seguros estimados (tarifas referenciales): propiedad = fracción anual del precio;
+// vida = costo mensual por cada RD$1,000 financiados, por tramo de edad.
+const DEF_SEG   = { propAnual:0.007308, vida20:0.4756, vida40:0.7772, vida60:2.8304, vida70:3.0856 };
 
 // ── TIPOS ────────────────────────────────────────────────────────────────────
 export interface Params {
@@ -32,12 +35,16 @@ export interface Params {
   pais: typeof DEF_PAIS;
   act: typeof DEF_ACT;
   edad: typeof DEF_EDAD;
-  fin: { tasaDOP: number; tasaUSD: number; tc: number; precioMinE2Usd: number };
+  fin: {
+    tasaDOP: number; tasaUSD: number; tc: number; precioMinE2Usd: number;
+    segurosActivo: boolean; segPropAnual: number;
+    vida20: number; vida40: number; vida60: number; vida70: number;
+  };
   ui: { popupActivo: boolean; contadorVisible: boolean; multibancoActivo: boolean; popupSoloE2: boolean };
 }
 
 interface ScoreResult {
-  sc: number; dti: number; ltv: number; cDOP: number;
+  sc: number; dti: number; ltv: number; cDOP: number; cCIDOP: number; cSegDOP: number;
   pD: number; pL: number; pI: number; pAt: number; pAtFinal: number;
   pExp: number; pExpTit: number; pEs: number; pAct: number; pP: number; pEd: number;
   ingEff: number; dTot: number; atraw: number; atpat: string;
@@ -92,7 +99,15 @@ export function buildParamsFromMap(m: Record<string, number>): Params {
     pais: { DO: m.pais_do, US: m.pais_us, PR: m.pais_pr, CA: m.pais_ca, ES: m.pais_es, otro: m.pais_otro },
     act: { noDeclara: m.act_no_declara, menos10: m.act_menos10, r10_30: m.act_10_30, mas30: m.act_mas30 },
     edad: { e18_24: m.edad_18_24, e25_45: m.edad_25_45, e46_55: m.edad_46_55, e56_60: m.edad_56_60, mas60: m.edad_mas60 },
-    fin: { tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio, precioMinE2Usd: m.fin_precio_min_e2_usd },
+    fin: {
+      tasaDOP: m.fin_tasa_dop, tasaUSD: m.fin_tasa_usd, tc: m.fin_tipo_cambio, precioMinE2Usd: m.fin_precio_min_e2_usd,
+      segurosActivo: m.fin_seguros_activo === 1,
+      segPropAnual: m.fin_seguro_propiedad_anual ?? DEF_SEG.propAnual,
+      vida20: m.fin_seguro_vida_20_39 ?? DEF_SEG.vida20,
+      vida40: m.fin_seguro_vida_40_59 ?? DEF_SEG.vida40,
+      vida60: m.fin_seguro_vida_60_69 ?? DEF_SEG.vida60,
+      vida70: m.fin_seguro_vida_70_mas ?? DEF_SEG.vida70,
+    },
     ui: {
       popupActivo: m.ui_popup_activo === 1,
       contadorVisible: m.ui_contador_visible === 1,
@@ -107,7 +122,11 @@ export function defaultParams(): Params {
     pesos: DEF_PESOS, dti: DEF_DTI, ltv: DEF_LTV, mora: DEF_MORA,
     exp: DEF_EXP, ing: DEF_ING, est: DEF_EST, pais: DEF_PAIS,
     act: DEF_ACT, edad: DEF_EDAD,
-    fin: { tasaDOP: DEF_TDOP * 12, tasaUSD: DEF_TUSD * 12, tc: DEF_TC, precioMinE2Usd: 40000 },
+    fin: {
+      tasaDOP: DEF_TDOP * 12, tasaUSD: DEF_TUSD * 12, tc: DEF_TC, precioMinE2Usd: 40000,
+      segurosActivo: false, segPropAnual: DEF_SEG.propAnual,
+      vida20: DEF_SEG.vida20, vida40: DEF_SEG.vida40, vida60: DEF_SEG.vida60, vida70: DEF_SEG.vida70,
+    },
     ui: { popupActivo: true, contadorVisible: true, multibancoActivo: false, popupSoloE2: false },
   };
 }
@@ -287,6 +306,25 @@ function getPeso(factor: string, p: Params): number {
   return (p.pesos as Record<string, number>)[factor] ?? 0;
 }
 
+// ── SEGUROS ESTIMADOS ────────────────────────────────────────────────────────
+export function vidaPorMil(edad: number, p: Params): number {
+  return edad >= 70 ? p.fin.vida70 : edad >= 60 ? p.fin.vida60 : edad >= 40 ? p.fin.vida40 : p.fin.vida20;
+}
+
+// Seguro mensual (vida sobre el monto financiado + propiedad sobre el precio). 0 si está apagado.
+export function segurosMensuales(prDOP: number, vinmDOP: number, edad: number, p: Params): number {
+  if (!p.fin.segurosActivo) return 0;
+  return (prDOP / 1000) * vidaPorMil(edad, p) + vinmDOP * (p.fin.segPropAnual / 12);
+}
+
+// Cuota por cada peso financiado (capital+interés+seguros) suponiendo un precio = financiado / 0.80.
+// Sirve para invertir "cuota máxima -> monto" en el Escenario 2.
+function factorCuota(tm: number, edad: number, p: Params): number {
+  const a = tm / (1 - Math.pow(1 + tm, -240));
+  if (!p.fin.segurosActivo) return a;
+  return a + vidaPorMil(edad, p) / 1000 + (p.fin.segPropAnual / 12) / 0.80;
+}
+
 // ── MOTOR PRINCIPAL ──────────────────────────────────────────────────────────
 function scoreFn(
   prDOP: number, iniDOP: number, ingTot: number, deuDOP: number, deuCDDOP: number,
@@ -297,12 +335,14 @@ function scoreFn(
   atrawCD: number, atpatCD: string, empCD: string, antCD: string, paisCD: string,
   tuvoPres: boolean, p: Params, tm: number, tc: number, atrehab?: string,
 ): ScoreResult {
-  const cDOP = prDOP > 0 ? (prDOP * tm) / (1 - Math.pow(1 + tm, -240)) : 0;
+  const cCIDOP = prDOP > 0 ? (prDOP * tm) / (1 - Math.pow(1 + tm, -240)) : 0;
+  const vinmDOP = prDOP + iniDOP;
+  const cSegDOP = prDOP > 0 ? segurosMensuales(prDOP, vinmDOP, edad, p) : 0;
+  const cDOP = cCIDOP + cSegDOP;
   const activosDOP = activosNum || 0;
   const ingEff = ingTot + activosDOP;
   const dTot = deuDOP + cDOP + deuCDDOP;
   const dti = ingEff > 0 ? dTot / ingEff : 1;
-  const vinmDOP = prDOP + iniDOP;
   const ltv = vinmDOP > 0 ? prDOP / vinmDOP : 1;
   const pUSD = prDOP / tc;
   const nr = pUSD < 8000 ? 1 : pUSD < 25000 ? 2 : pUSD < 50000 ? 3 : pUSD < 100000 ? 4 : 5;
@@ -355,7 +395,7 @@ function scoreFn(
   if (moraRecCD) sc = Math.min(sc, 74);
 
   return {
-    sc, dti, ltv, cDOP,
+    sc, dti, ltv, cDOP, cCIDOP, cSegDOP,
     pD, pL, pI, pAt: pAtTit, pAtFinal, pExp: pExpFinal, pExpTit, pEs,
     pAct: pA, pP, pEd, ingEff, dTot, atraw, atpat,
   };
@@ -419,7 +459,7 @@ function buildSims(
   const sims: SimItem[] = [];
 
   if (deuDOP > 0) {
-    const cDOP = prDOP > 0 ? (prDOP * tm) / (1 - Math.pow(1 + tm, -240)) : 0;
+    const cDOP = prDOP > 0 ? e1.cDOP : 0;
     const d2 = (deuDOP * 0.5 + cDOP + deuCDDOP) / Math.max(ingTot, 1);
     const pD2 = pDTI(d2, p);
     const dl = Math.round(Math.min(95, s - e1.pD * getPeso('dti', p) + pD2 * getPeso('dti', p)) - s);
@@ -504,7 +544,7 @@ export function computeFull(input: CalcInput, p: Params, tm: number, tc: number)
   const virDOPMin = Math.round(precioMinE2Usd * tc / 10000) * 10000;
   const e2NoViable = virDOPMin >= prDOP;
 
-  let e2: ScoreResult = { sc: 0, cDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
+  let e2: ScoreResult = { sc: 0, cDOP: 0, cCIDOP: 0, cSegDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
   let mrDOP = 0, virDOP = 0, isiDOP = iniDOP;
 
   // Si el E1 no llega a 70, el E2 busca la propiedad más cercana al precio
@@ -527,7 +567,7 @@ export function computeFull(input: CalcInput, p: Params, tm: number, tc: number)
 
   if (e2.sc < objE2) {
     const cmaxHip = Math.max(0, ingEffTotal * 0.33 - deuExist);
-    mrDOP = cmaxHip > 0 ? Math.round((cmaxHip * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000 : 0;
+    mrDOP = cmaxHip > 0 ? Math.round((cmaxHip / factorCuota(tm, edad, p)) / 10000) * 10000 : 0;
     if (mrDOP >= prDOP) mrDOP = Math.max(0, prDOP - 100000);
 
     virDOP = mrDOP > 0 ? Math.round(mrDOP / 0.80 / 10000) * 10000 : 0;
@@ -539,14 +579,14 @@ export function computeFull(input: CalcInput, p: Params, tm: number, tc: number)
 
     e2 = (!e2NoViable && mrDOP > 0)
       ? scoreFn(mrDOP, isiDOP, ingTot, deuDOP, deuCDDOP, pais, emp, ant, expc, antCred, prods, atraw, atpat, activosDOP, edad, tieneCD, ingCDDOP, ingDOP, expcCD, antCredCD, prodsCD, atrawCD, atpatCD, empCD, antCD, paisCD, tuvoPres, p, tm, tc, atrehab)
-      : { sc: 0, cDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
+      : { sc: 0, cDOP: 0, cCIDOP: 0, cSegDOP: 0, dti: 0, ltv: 0, pD: 0, pL: 0, pI: 0, pAt: 0, pAtFinal: 0, pExp: 0, pExpTit: 0, pEs: 0, pAct: 0, pP: 0, pEd: 0, ingEff: 0, dTot: 0, atraw, atpat };
 
     if (!e2NoViable) {
       const ratios = [0.30, 0.28, 0.25];
       for (let ri = 0; ri < ratios.length && e2.sc < techoE2; ri++) {
         const cap2 = ingEffTotal * ratios[ri] - deuExist;
         if (cap2 > 0) {
-          let mr2 = Math.round((Math.max(0, cap2) * (1 - Math.pow(1 + tm, -240)) / tm) / 10000) * 10000;
+          let mr2 = Math.round((Math.max(0, cap2) / factorCuota(tm, edad, p)) / 10000) * 10000;
           if (mr2 > 0 && mr2 < prDOP) {
             let vir2 = Math.round(mr2 / 0.80 / 10000) * 10000;
             if (vir2 < virDOPMin) vir2 = virDOPMin;
@@ -675,6 +715,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ...result,
       tc, tdop, tusd,
+      segurosActivo: p.fin.segurosActivo,
       popupActivo: p.ui.popupActivo,
       contadorVisible: p.ui.contadorVisible,
       popupSoloE2: p.ui.popupSoloE2,
